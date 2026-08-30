@@ -906,29 +906,38 @@ Narrative + Recommendation
 # GOVERNANCE & TELEMETRY
 # =========================================================
 elif page == "Governance & Telemetry":
+
     st.markdown(
         '<div class="section-title">Governance & Telemetry</div>',
         unsafe_allow_html=True
     )
 
-    st.markdown("### Role-Based Access")
+    st.write(
+        "Monitor how BusinessIntelligence.ai protects data, controls AI behaviour, "
+        "and measures system performance."
+    )
+
+    # -----------------------------------------------------
+    # SECURITY
+    # -----------------------------------------------------
+    st.markdown("### Security & Access")
 
     security = pd.DataFrame(
         {
-            "Persona": [
+            "Role": [
                 "CEO",
                 "Sales Manager",
                 "Analyst"
             ],
-            "Access Scope": [
+            "Access": [
                 "Aggregate business metrics",
-                "Regional + customer context",
+                "Regional and authorised customer information",
                 "Detailed analytical evidence"
             ],
             "Sensitive Data": [
                 "Restricted",
                 "Role dependent",
-                "Authorized analytical access"
+                "Authorised analytical access"
             ]
         }
     )
@@ -939,6 +948,41 @@ elif page == "Governance & Telemetry":
         hide_index=True
     )
 
+    # -----------------------------------------------------
+    # DATA GOVERNANCE
+    # -----------------------------------------------------
+    st.markdown("### Data Governance")
+
+    governance = pd.DataFrame(
+        {
+            "Control": [
+                "KPI Definition",
+                "Data Freshness",
+                "Source Lineage",
+                "Access Control",
+                "Confidence",
+                "Auditability"
+            ],
+            "Purpose": [
+                "Ensure consistent KPI calculations",
+                "Show when source data was last updated",
+                "Trace insights back to originating systems",
+                "Restrict data based on user permissions",
+                "Communicate strength of available evidence",
+                "Record analytical decisions and outputs"
+            ]
+        }
+    )
+
+    st.dataframe(
+        governance,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    # -----------------------------------------------------
+    # TELEMETRY
+    # -----------------------------------------------------
     st.markdown("### Runtime Telemetry")
 
     telemetry = engine.telemetry
@@ -965,25 +1009,39 @@ elif page == "Governance & Telemetry":
         f"${telemetry['est_cost_usd']:.4f}"
     )
 
-    st.markdown("### LLM vs Non-LLM")
+    # -----------------------------------------------------
+    # LLM VS NON-LLM
+    # -----------------------------------------------------
+    st.markdown("### LLM vs Non-LLM Processing")
 
     processing = pd.DataFrame(
         {
             "Processing Step": [
                 "KPI Calculation",
                 "Materiality Detection",
-                "Contribution Analysis",
+                "Driver Contribution",
                 "Evidence Retrieval",
-                "Narrative",
+                "Confidence Assessment",
+                "Narrative Generation",
                 "Recommendation"
             ],
-            "Primary Technology": [
-                "Deterministic",
-                "Statistics + Rules",
-                "Deterministic Analytics",
+            "Technology": [
+                "Deterministic logic",
+                "Statistics + business rules",
+                "Deterministic analytics",
                 "Retrieval",
+                "Rules + statistical evidence",
                 "LLM",
                 "Rules + LLM"
+            ],
+            "Reason": [
+                "Numerical accuracy",
+                "Separate signal from normal variation",
+                "Quantify measurable contributors",
+                "Find relevant qualitative evidence",
+                "Avoid unsupported certainty",
+                "Convert evidence into natural language",
+                "Translate evidence into practical action"
             ]
         }
     )
@@ -994,8 +1052,9 @@ elif page == "Governance & Telemetry":
         hide_index=True
     )
 
+
 # =========================================================
-# FEEDBACK
+# FEEDBACK & LEARNING
 # =========================================================
 elif page == "Feedback":
 
@@ -1005,38 +1064,47 @@ elif page == "Feedback":
     )
 
     st.write(
-        "Your feedback helps BusinessIntelligence.ai improve driver accuracy, "
-        "confidence calibration, evidence quality and recommended actions."
+        "Help BusinessIntelligence.ai improve the accuracy of its explanations, "
+        "confidence assessments and recommended actions."
     )
 
+    # -----------------------------------------------------
+    # HUMAN-IN-THE-LOOP EXPLANATION
+    # -----------------------------------------------------
     st.markdown(
         """
         <div class="insight-box">
             <b>Human-in-the-loop learning</b><br><br>
 
-            Business users and analysts can validate an insight, identify
-            incorrect drivers, flag missing evidence or challenge the confidence
-            level assigned by the engine.
+            Business users and analysts can validate whether an insight was
+            useful, challenge the identified driver, report missing evidence,
+            or flag an incorrect confidence level.
 
             <br><br>
 
-            In a production system, this feedback would be captured as labelled
-            evaluation data for continuous improvement.
+            This feedback can be used in production to improve driver ranking,
+            evidence retrieval, confidence calibration and recommendation quality.
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    st.markdown("### Insight Feedback")
+    # -----------------------------------------------------
+    # FEEDBACK FORM
+    # -----------------------------------------------------
+    st.markdown("### Submit Feedback")
 
-    feedback = st.selectbox(
-        "How useful was the insight?",
+    feedback_type = st.selectbox(
+        "What would you like to tell us?",
         [
-            "Useful",
-            "Partially useful",
+            "Insight was useful",
+            "Insight was partially useful",
             "Incorrect driver",
             "Missing evidence",
-            "Wrong confidence"
+            "Confidence was too high",
+            "Confidence was too low",
+            "Recommendation was not practical",
+            "Other"
         ]
     )
 
@@ -1046,58 +1114,103 @@ elif page == "Feedback":
             "Tell us what was correct, incorrect, missing, "
             "or what the engine should have considered..."
         ),
-        height=140
+        height=160
     )
 
-    submitted = st.button(
-        "Submit Feedback",
-        type="primary"
+    role_for_feedback = st.selectbox(
+        "Your role",
+        [
+            "CEO",
+            "Sales Manager",
+            "Analyst"
+        ]
     )
 
-    if submitted:
+    if st.button("Submit Feedback", type="primary"):
 
-        if comment.strip():
+        if not comment.strip():
 
-            st.success(
-                "Thank you. Your feedback has been captured."
-            )
-
-            st.info(
-                f"Feedback type: {feedback}"
+            st.warning(
+                "Please add a comment before submitting your feedback."
             )
 
         else:
 
-            st.warning(
-                "Please add a comment before submitting."
+            # Store feedback in session state for prototype demonstration
+            if "feedback_history" not in st.session_state:
+                st.session_state.feedback_history = []
+
+            st.session_state.feedback_history.append(
+                {
+                    "Role": role_for_feedback,
+                    "Feedback": feedback_type,
+                    "Comment": comment
+                }
             )
 
-    st.markdown("### Feedback Categories")
+            st.success(
+                "Thank you — your feedback has been captured."
+            )
 
-    feedback_categories = pd.DataFrame(
+            st.caption(
+                "In production, feedback would be stored in a governed feedback "
+                "store and used for evaluation and model improvement."
+            )
+
+    # -----------------------------------------------------
+    # FEEDBACK HISTORY
+    # -----------------------------------------------------
+    st.markdown("### Recent Feedback")
+
+    if "feedback_history" not in st.session_state:
+        st.session_state.feedback_history = []
+
+    if len(st.session_state.feedback_history) == 0:
+
+        st.info(
+            "No feedback submitted yet. Your first submission will appear here."
+        )
+
+    else:
+
+        feedback_df = pd.DataFrame(
+            st.session_state.feedback_history
+        )
+
+        st.dataframe(
+            feedback_df,
+            use_container_width=True,
+            hide_index=True
+        )
+
+    # -----------------------------------------------------
+    # LEARNING LOOP
+    # -----------------------------------------------------
+    st.markdown("### How Feedback Improves the Engine")
+
+    learning_loop = pd.DataFrame(
         {
-            "Category": [
-                "Useful",
-                "Incorrect Driver",
-                "Missing Evidence",
-                "Wrong Confidence",
-                "Partially Useful"
+            "User Feedback": [
+                "Incorrect driver",
+                "Missing evidence",
+                "Wrong confidence",
+                "Poor recommendation"
             ],
-            "How It Helps": [
-                "Confirms high-quality insights",
-                "Improves driver ranking",
-                "Improves evidence retrieval",
-                "Improves confidence calibration",
-                "Identifies areas needing refinement"
+            "Improvement Area": [
+                "Driver ranking",
+                "Evidence retrieval",
+                "Confidence calibration",
+                "Action recommendation"
             ]
         }
     )
 
     st.dataframe(
-        feedback_categories,
+        learning_loop,
         use_container_width=True,
         hide_index=True
     )
+
 
 # =========================================================
 # FOOTER
