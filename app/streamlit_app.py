@@ -1227,6 +1227,9 @@ st.markdown(
 # =========================================================
 # FEEDBACK & COMMENTS
 # =========================================================
+# =========================================================
+# FEEDBACK & COMMENTS
+# =========================================================
 if page == "Feedback/Comments":
 
     st.markdown(
@@ -1235,22 +1238,16 @@ if page == "Feedback/Comments":
     )
 
     st.write(
-        "Tell us what worked, what needs improvement, or where the engine "
-        "could provide better intelligence."
+        "Tell us what worked, what needs improvement, "
+        "or where the engine could provide better intelligence."
     )
 
-    # -----------------------------------------------------
-    # FEEDBACK INTRO
-    # -----------------------------------------------------
     st.info(
         "Your feedback helps improve BusinessIntelligence.ai across "
-        "analytics, recommendations, evidence quality, governance and "
-        "the overall decision-making experience."
+        "analytics, recommendations, evidence quality, governance "
+        "and the overall decision-making experience."
     )
 
-    # -----------------------------------------------------
-    # WHAT PART ARE YOU REVIEWING?
-    # -----------------------------------------------------
     st.markdown("### What would you like to review?")
 
     feedback_area = st.selectbox(
@@ -1266,9 +1263,6 @@ if page == "Feedback/Comments":
         key="feedback_area"
     )
 
-    # -----------------------------------------------------
-    # FEEDBACK TYPE
-    # -----------------------------------------------------
     st.markdown("### What would you like to tell us?")
 
     feedback_type = st.selectbox(
@@ -1289,9 +1283,6 @@ if page == "Feedback/Comments":
         key="feedback_type"
     )
 
-    # -----------------------------------------------------
-    # ROLE
-    # -----------------------------------------------------
     feedback_role = st.selectbox(
         "Select your role",
         [
@@ -1302,9 +1293,6 @@ if page == "Feedback/Comments":
         key="feedback_role"
     )
 
-    # -----------------------------------------------------
-    # COMMENT
-    # -----------------------------------------------------
     comment = st.text_area(
         "Comment",
         placeholder=(
@@ -1315,9 +1303,6 @@ if page == "Feedback/Comments":
         key="feedback_comment"
     )
 
-    # -----------------------------------------------------
-    # SUBMIT
-    # -----------------------------------------------------
     if st.button(
         "Submit Feedback",
         type="primary",
@@ -1348,14 +1333,6 @@ if page == "Feedback/Comments":
                 f"Feedback captured for {feedback_area}."
             )
 
-            st.caption(
-                "In production, this feedback would be stored in a governed "
-                "feedback system for evaluation, calibration and continuous improvement."
-            )
-
-    # -----------------------------------------------------
-    # RECENT FEEDBACK
-    # -----------------------------------------------------
     st.markdown("### Recent Feedback")
 
     if "feedback_history" not in st.session_state:
@@ -1379,26 +1356,23 @@ if page == "Feedback/Comments":
             hide_index=True
         )
 
-    # -----------------------------------------------------
-    # FEEDBACK → LEARNING LOOP
-    # -----------------------------------------------------
     st.markdown("### How Feedback Improves the Engine")
 
     learning_loop = pd.DataFrame(
         {
             "Feedback Area": [
+                "Overview",
                 "KPI Intelligence",
                 "Decision Workspace",
                 "Evidence & Lineage",
-                "Governance & Telemetry",
-                "Overview"
+                "Governance & Telemetry"
             ],
             "Improvement Focus": [
+                "Clarity and business usability",
                 "Driver ranking and confidence",
-                "Recommendation quality and decision usefulness",
+                "Recommendation quality",
                 "Evidence retrieval and traceability",
-                "Security, latency, cost and system reliability",
-                "Clarity and business usability"
+                "Security, latency and system reliability"
             ]
         }
     )
