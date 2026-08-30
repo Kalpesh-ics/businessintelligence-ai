@@ -1466,22 +1466,22 @@ elif page == "Governance & Telemetry":
 
     c1.metric(
         "Latency",
-        f"{telemetry['00']} ms"
+        f"{telemetry['latency_ms']} ms"
     )
 
     c2.metric(
         "LLM Calls",
-        telemetry["0"]
+        "0"
     )
 
     c3.metric(
         "Tokens Used",
-        telemetry["0"]
+        "0"
     )
 
     c4.metric(
         "Estimated Cost",
-        f"${telemetry['0']:.4f}"
+        "$0.000"
     )
 
     st.markdown("### LLM vs Non-LLM Processing")
