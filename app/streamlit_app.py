@@ -605,7 +605,7 @@ elif page == "KPI Intelligence":
         contribution = pd.DataFrame(
             {
                 "Driver": [
-                    "Product A Volume",
+                    "Prod A Volume",
                     "Enterprise Customer Decline",
                     "Price",
                     "Other / Offset"
@@ -818,7 +818,7 @@ elif page == "Decision Workspace":
 
     c3.metric(
         "Primary Contributor",
-        "Product A Volume"
+        "Prod A Volume"
     )
 
     c4.metric(
@@ -843,7 +843,7 @@ elif page == "Decision Workspace":
         {
             "Business Signal": [
                 "Revenue",
-                "Product A Volume",
+                "Prod A Volume",
                 "Enterprise Customers",
                 "Fulfilment SLA",
                 "Support Activity"
@@ -872,7 +872,7 @@ elif page == "Decision Workspace":
     )
 
     st.info(
-        "Product A volume is the largest quantified contributor. "
+        "Prod A volume is the largest quantified contributor. "
         "Fulfilment deterioration and support activity are supporting signals, "
         "but current evidence does not establish causality."
     )
@@ -916,7 +916,7 @@ elif page == "Decision Workspace":
             elif "price" in q:
 
                 st.info(
-                    "Price is a smaller quantified contributor than Product A "
+                    "Price is a smaller quantified contributor than Prod A "
                     "volume. Pricing should therefore not be the first intervention "
                     "based on current evidence."
                 )
@@ -924,7 +924,7 @@ elif page == "Decision Workspace":
             elif "why" in q:
 
                 st.info(
-                    "Product A volume is the largest measured contributor. "
+                    "Prod A volume is the largest measured contributor. "
                     "Operational and support signals suggest fulfilment disruption "
                     "may be involved, but causality has not been established."
                 )
@@ -932,7 +932,7 @@ elif page == "Decision Workspace":
             else:
 
                 st.info(
-                    "The strongest current signals are Product A volume and "
+                    "The strongest current signals are Prod A volume and "
                     "enterprise customer impact. More evidence is required "
                     "for a more specific conclusion."
                 )
@@ -963,7 +963,7 @@ elif page == "Decision Workspace":
             "impact": "Potentially protects at-risk enterprise revenue",
             "risk": "Requires account-level coordination"
         },
-        "Fix Product A Fulfilment": {
+        "Fix Prod A Fulfilment": {
             "driver": "Fulfilment SLA deterioration",
             "lever": "Operational capacity",
             "owner": "Operations",
