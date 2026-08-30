@@ -905,8 +905,7 @@ Narrative + Recommendation
 # =========================================================
 # GOVERNANCE & TELEMETRY
 # =========================================================
-else:
-
+elif page == "Governance & Telemetry":
     st.markdown(
         '<div class="section-title">Governance & Telemetry</div>',
         unsafe_allow_html=True
