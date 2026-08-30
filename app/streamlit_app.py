@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import sys
 import os
-import numpy as np
+import time
 
 
 # =========================================================
@@ -75,7 +75,6 @@ st.markdown(
         color: #F9FAFB !important;
     }
 
-    /* Role selectbox */
     section[data-testid="stSidebar"] div[data-baseweb="select"] {
         background-color: #FFFFFF !important;
         border-radius: 8px !important;
@@ -85,7 +84,6 @@ st.markdown(
         color: #111827 !important;
     }
 
-    /* Dropdown popup */
     div[data-baseweb="popover"] {
         background-color: #FFFFFF !important;
     }
@@ -248,33 +246,6 @@ st.markdown(
 
 
     /* =====================================================
-       DECISION CARDS
-       ===================================================== */
-
-    .decision-card {
-        background: #FFFFFF;
-        border: 1px solid #E5E7EB;
-        border-radius: 16px;
-        padding: 22px;
-        min-height: 220px;
-        box-shadow: 0 2px 10px rgba(16, 24, 40, 0.04);
-    }
-
-    .decision-card-title {
-        font-size: 18px;
-        font-weight: 750;
-        color: #101828;
-        margin-bottom: 12px;
-    }
-
-    .decision-card-text {
-        color: #667085;
-        font-size: 14px;
-        line-height: 1.6;
-    }
-
-
-    /* =====================================================
        FOOTER
        ===================================================== */
 
@@ -323,6 +294,7 @@ BASELINE_REVENUE = 100_000_000
 CURRENT_REVENUE = 91_800_000
 
 REVENUE_CHANGE = CURRENT_REVENUE - BASELINE_REVENUE
+
 REVENUE_PERCENT_CHANGE = (
     REVENUE_CHANGE / BASELINE_REVENUE
 )
@@ -330,8 +302,9 @@ REVENUE_PERCENT_CHANGE = (
 BUSINESS_IMPACT = abs(REVENUE_CHANGE)
 
 
-# Contribution values are derived from the total revenue impact.
-# They sum to 100% of the quantified decline.
+# =========================================================
+# DRIVER CONTRIBUTIONS
+# =========================================================
 
 DRIVER_CONTRIBUTIONS = pd.DataFrame(
     {
@@ -355,6 +328,54 @@ DRIVER_CONTRIBUTIONS["Impact ($)"] = (
     * DRIVER_CONTRIBUTIONS["Contribution (%)"]
     / 100
 )
+
+
+# =========================================================
+# ACTION DEFINITIONS
+# =========================================================
+
+ACTIONS = {
+
+    "Protect Enterprise Renewals": {
+        "driver": "Enterprise customer decline",
+        "lever": "Customer retention",
+        "owner": "Sales + Customer Success",
+        "confidence": "HIGH",
+        "impact": "Potentially protects at-risk enterprise revenue",
+        "risk": "Requires account-level coordination",
+        "min_budget": 100_000,
+        "required_authority": "Regional"
+    },
+
+    "Fix Product A Fulfilment": {
+        "driver": "Fulfilment SLA deterioration",
+        "lever": "Operational capacity",
+        "owner": "Operations",
+        "confidence": "MEDIUM",
+        "impact": "Potentially reduces service-related revenue pressure",
+        "risk": "Root cause is not yet causally established",
+        "min_budget": 150_000,
+        "required_authority": "Business Unit"
+    },
+
+    "Adjust Pricing": {
+        "driver": "Price contribution",
+        "lever": "Pricing",
+        "owner": "Pricing / Finance",
+        "confidence": "LOW",
+        "impact": "May influence volume but could reduce margin",
+        "risk": "Price is not the dominant quantified contributor",
+        "min_budget": 50_000,
+        "required_authority": "Business Unit"
+    }
+}
+
+
+AUTHORITY_LEVEL = {
+    "Regional": 1,
+    "Business Unit": 2,
+    "Enterprise": 3
+}
 
 
 # =========================================================
@@ -445,10 +466,6 @@ if page == "Overview":
     )
 
 
-    # -----------------------------------------------------
-    # KEY BUSINESS METRICS
-    # -----------------------------------------------------
-
     st.markdown(
         '<div class="section-title">Key Business Metrics</div>',
         unsafe_allow_html=True
@@ -500,10 +517,7 @@ if page == "Overview":
             st.markdown(
                 f"""
                 <div class="metric-card">
-                    <div class="metric-name">
-                        {name}
-                    </div>
-
+                    <div class="metric-name">{name}</div>
                     <div class="metric-description">
                         {description}
                     </div>
@@ -512,10 +526,6 @@ if page == "Overview":
                 unsafe_allow_html=True
             )
 
-
-    # -----------------------------------------------------
-    # KEY BUSINESS SIGNALS
-    # -----------------------------------------------------
 
     st.markdown(
         '<div class="section-title">Key Business Signals</div>',
@@ -563,42 +573,25 @@ if page == "Overview":
     ]
 
 
-    for (
-        name,
-        explanation,
-        positive,
-        negative
-    ) in signals:
+    for name, explanation, positive, negative in signals:
 
         st.markdown(
             f"""
             <div class="signal-card">
-                <div class="signal-title">
-                    {name}
-                </div>
+                <div class="signal-title">{name}</div>
 
                 <div style="color:#667085; margin-bottom:8px;">
                     {explanation}
                 </div>
 
-                <span class="signal-up">
-                    ↑ {positive}
-                </span>
-
+                <span class="signal-up">↑ {positive}</span>
                 &nbsp;&nbsp;&nbsp;
-
-                <span class="signal-down">
-                    ↓ {negative}
-                </span>
+                <span class="signal-down">↓ {negative}</span>
             </div>
             """,
             unsafe_allow_html=True
         )
 
-
-    # -----------------------------------------------------
-    # EXPLORE
-    # -----------------------------------------------------
 
     st.markdown(
         '<div class="section-title">Explore BusinessIntelligence.ai</div>',
@@ -610,7 +603,6 @@ if page == "Overview":
 
 
     with c1:
-
         st.info(
             "**KPI Intelligence**\n\n"
             "Investigate material movements and identify likely drivers."
@@ -618,7 +610,6 @@ if page == "Overview":
 
 
     with c2:
-
         st.info(
             "**Decision Workspace**\n\n"
             "Evaluate actions, constraints and outcomes."
@@ -626,7 +617,6 @@ if page == "Overview":
 
 
     with c3:
-
         st.info(
             "**Governance & Telemetry**\n\n"
             "Inspect lineage, freshness, security and runtime behaviour."
@@ -698,13 +688,7 @@ elif page == "KPI Intelligence":
         )
 
 
-        # -------------------------------------------------
-        # DETECTION
-        # -------------------------------------------------
-
-        st.markdown(
-            "### 1. Detect Material Movement"
-        )
+        st.markdown("### 1. Detect Material Movement")
 
 
         baseline = [
@@ -749,13 +733,7 @@ elif page == "KPI Intelligence":
         )
 
 
-        # -------------------------------------------------
-        # CONTRIBUTION
-        # -------------------------------------------------
-
-        st.markdown(
-            "### 2. Driver Contribution"
-        )
+        st.markdown("### 2. Driver Contribution")
 
 
         contribution_display = DRIVER_CONTRIBUTIONS.copy()
@@ -789,13 +767,7 @@ elif page == "KPI Intelligence":
         )
 
 
-        # -------------------------------------------------
-        # EVIDENCE
-        # -------------------------------------------------
-
-        st.markdown(
-            "### 3. Supporting Evidence"
-        )
+        st.markdown("### 3. Supporting Evidence")
 
 
         evidence = engine.retrieve_unstructured_evidence(
@@ -808,35 +780,24 @@ elif page == "KPI Intelligence":
 
         with col1:
 
-            st.markdown(
-                "**Support Tickets**"
-            )
+            st.markdown("**Support Tickets**")
 
             st.info(
-                "300% spike in outage and latency tags in "
-                "US-West data centers."
+                "300% spike in outage and latency tags in US-West data centers."
             )
 
 
         with col2:
 
-            st.markdown(
-                "**CRM Notes**"
-            )
+            st.markdown("**CRM Notes**")
 
             st.info(
-                "Major enterprise accounts are threatening "
-                "non-renewal over missed uptime SLAs."
+                "Major enterprise accounts are threatening non-renewal "
+                "over missed uptime SLAs."
             )
 
 
-        # -------------------------------------------------
-        # FRESHNESS
-        # -------------------------------------------------
-
-        st.markdown(
-            "### 4. Source Freshness"
-        )
+        st.markdown("### 4. Source Freshness")
 
 
         freshness = pd.DataFrame(
@@ -864,13 +825,7 @@ elif page == "KPI Intelligence":
         )
 
 
-        # -------------------------------------------------
-        # CONFIDENCE
-        # -------------------------------------------------
-
-        st.markdown(
-            "### 5. Confidence"
-        )
+        st.markdown("### 5. Confidence")
 
 
         confidence = engine.determine_confidence(
@@ -881,30 +836,18 @@ elif page == "KPI Intelligence":
 
         if "HIGH" in confidence:
 
-            st.success(
-                "HIGH CONFIDENCE"
-            )
+            st.success("HIGH CONFIDENCE")
 
         elif "MEDIUM" in confidence:
 
-            st.warning(
-                "MEDIUM CONFIDENCE"
-            )
+            st.warning("MEDIUM CONFIDENCE")
 
         else:
 
-            st.error(
-                "LOW CONFIDENCE"
-            )
+            st.error("LOW CONFIDENCE")
 
 
-        # -------------------------------------------------
-        # NARRATIVE
-        # -------------------------------------------------
-
-        st.markdown(
-            "### 6. Business Narrative"
-        )
+        st.markdown("### 6. Business Narrative")
 
 
         narrative = engine.generate_narrative(
@@ -935,9 +878,7 @@ elif page == "KPI Intelligence":
 
     elif scenario == "Low Confidence / Abstention":
 
-        st.subheader(
-            "Q3 Marketing ROI"
-        )
+        st.subheader("Q3 Marketing ROI")
 
 
         c1, c2, c3 = st.columns(3)
@@ -961,9 +902,7 @@ elif page == "KPI Intelligence":
         )
 
 
-        st.markdown(
-            "### Evidence Conflict"
-        )
+        st.markdown("### Evidence Conflict")
 
 
         st.warning(
@@ -972,9 +911,7 @@ elif page == "KPI Intelligence":
         )
 
 
-        st.markdown(
-            "### Engine Decision"
-        )
+        st.markdown("### Engine Decision")
 
 
         st.error(
@@ -990,16 +927,15 @@ elif page == "KPI Intelligence":
                 <b>Why the engine abstains</b>
 
                 <p>
-                    Multiple signals are present, but critical
-                    attribution data is incomplete or contradictory.
+                    Multiple signals are present, but critical attribution
+                    data is incomplete or contradictory.
                 </p>
 
                 <b>Recommended next step</b>
 
                 <p>
-                    Restore the attribution pipeline and validate
-                    channel-level conversion data before taking
-                    corrective action.
+                    Restore the attribution pipeline and validate channel-level
+                    conversion data before taking corrective action.
                 </p>
 
             </div>
@@ -1055,9 +991,7 @@ elif page == "KPI Intelligence":
         )
 
 
-        st.markdown(
-            "### Method Selection"
-        )
+        st.markdown("### Method Selection")
 
 
         st.warning(
@@ -1097,7 +1031,6 @@ elif page == "Decision Workspace":
         unsafe_allow_html=True
     )
 
-
     st.write(
         "Move from evidence to an actionable decision using "
         "business levers, constraints and decision rights."
@@ -1108,9 +1041,7 @@ elif page == "Decision Workspace":
     # ACTIVE DECISION
     # -----------------------------------------------------
 
-    st.markdown(
-        "### Active Decision"
-    )
+    st.markdown("### Active Decision")
 
 
     c1, c2, c3, c4 = st.columns(4)
@@ -1147,14 +1078,12 @@ elif page == "Decision Workspace":
     # WHY
     # -----------------------------------------------------
 
-    st.markdown(
-        "### Why is this happening?"
-    )
+    st.markdown("### Why is this happening?")
 
 
     st.write(
-        "The engine traces the material movement through "
-        "quantified contributors and supporting business signals."
+        "The engine traces the material movement through quantified "
+        "contributors and supporting business signals."
     )
 
 
@@ -1192,135 +1121,80 @@ elif page == "Decision Workspace":
     )
 
 
-    st.info(
-        "Product A volume is the largest quantified contributor. "
-        "Fulfilment deterioration and support activity are supporting "
-        "signals, but the current evidence does not establish causality."
-    )
-
-
     # -----------------------------------------------------
     # ACTION EVALUATION
     # -----------------------------------------------------
 
-    st.markdown(
-        "### Evaluate Actions"
-    )
+    st.markdown("### Evaluate Actions")
 
 
     st.write(
         "Compare practical responses using available evidence, "
-        "business levers and decision rights."
+        "business levers, constraints and decision rights."
     )
 
 
-    actions = {
-
-        "Protect Enterprise Renewals": {
-            "driver": "Enterprise customer decline",
-            "lever": "Customer retention",
-            "owner": "Sales + Customer Success",
-            "confidence": "HIGH",
-            "impact": "Potentially protects at-risk enterprise revenue",
-            "risk": "Requires account-level coordination"
-        },
-
-        "Fix Product A Fulfilment": {
-            "driver": "Fulfilment SLA deterioration",
-            "lever": "Operational capacity",
-            "owner": "Operations",
-            "confidence": "MEDIUM",
-            "impact": "Potentially reduces service-related revenue pressure",
-            "risk": "Root cause is not yet causally established"
-        },
-
-        "Adjust Pricing": {
-            "driver": "Price contribution",
-            "lever": "Pricing",
-            "owner": "Pricing / Finance",
-            "confidence": "LOW",
-            "impact": "May influence volume but could reduce margin",
-            "risk": "Price is not the dominant quantified contributor"
-        }
-    }
-
-
     selected_action = st.selectbox(
-        "Choose an action to evaluate",
-        list(actions.keys()),
+        "Choose an action",
+        list(ACTIONS.keys()),
         key="selected_action"
     )
 
 
-    action = actions[selected_action]
+    action = ACTIONS[selected_action]
 
 
-    ac1, ac2 = st.columns(2)
+    st.markdown("#### Action Details")
 
 
-    with ac1:
+    c1, c2 = st.columns(2)
 
-        st.markdown(
-            f"""
-            <div class="decision-card">
 
-                <div class="decision-card-title">
-                    Action Assessment
-                </div>
+    with c1:
 
-                <div class="decision-card-text">
+        st.markdown("**Driver**")
 
-                    <b>Driver</b><br>
-                    {action["driver"]}
+        st.write(action["driver"])
 
-                    <br><br>
 
-                    <b>Controllable Lever</b><br>
-                    {action["lever"]}
+        st.markdown("**Controllable Lever**")
 
-                    <br><br>
+        st.write(action["lever"])
 
-                    <b>Owner</b><br>
-                    {action["owner"]}
 
-                    <br><br>
+        st.markdown("**Owner**")
 
-                    <b>Confidence</b><br>
-                    {action["confidence"]}
+        st.write(action["owner"])
 
-                </div>
 
-            </div>
-            """,
-            unsafe_allow_html=True
+        st.markdown("**Confidence**")
+
+        st.write(action["confidence"])
+
+
+    with c2:
+
+        st.markdown("**Expected Impact**")
+
+        st.write(action["impact"])
+
+
+        st.markdown("**Key Risk**")
+
+        st.write(action["risk"])
+
+
+        st.markdown("**Minimum Budget Required**")
+
+        st.write(
+            f"${action['min_budget']:,.0f}"
         )
 
 
-    with ac2:
+        st.markdown("**Required Decision Authority**")
 
-        st.markdown(
-            f"""
-            <div class="decision-card">
-
-                <div class="decision-card-title">
-                    Expected Outcome
-                </div>
-
-                <div class="decision-card-text">
-
-                    <b>Expected Impact</b><br>
-                    {action["impact"]}
-
-                    <br><br>
-
-                    <b>Key Risk</b><br>
-                    {action["risk"]}
-
-                </div>
-
-            </div>
-            """,
-            unsafe_allow_html=True
+        st.write(
+            action["required_authority"]
         )
 
 
@@ -1328,9 +1202,7 @@ elif page == "Decision Workspace":
     # BUSINESS CONSTRAINTS
     # -----------------------------------------------------
 
-    st.markdown(
-        "### Business Constraints"
-    )
+    st.markdown("### Business Constraints")
 
 
     cc1, cc2, cc3 = st.columns(3)
@@ -1372,58 +1244,78 @@ elif page == "Decision Workspace":
 
 
     st.caption(
-        f"Current constraints: "
-        f"${budget:,.0f} budget · "
+        f"Current constraints: ${budget:,.0f} budget · "
         f"{max_discount}% maximum discount · "
         f"{authority} decision authority"
     )
 
 
     # -----------------------------------------------------
-    # CONSTRAINT CHECK
+    # COMPATIBILITY CHECK
     # -----------------------------------------------------
 
-    st.markdown(
-        "### Constraint Check"
-    )
+    st.markdown("### Compatibility Check")
+
+
+    compatibility_messages = []
+
+
+    if budget < action["min_budget"]:
+
+        compatibility_messages.append(
+            f"Budget is insufficient. "
+            f"This action requires at least "
+            f"${action['min_budget']:,.0f}."
+        )
+
+
+    if (
+        AUTHORITY_LEVEL[authority]
+        < AUTHORITY_LEVEL[action["required_authority"]]
+    ):
+
+        compatibility_messages.append(
+            f"Decision authority is insufficient. "
+            f"This action requires "
+            f"{action['required_authority']} authority."
+        )
 
 
     if (
         selected_action == "Adjust Pricing"
-        and authority == "Regional"
+        and max_discount == 0
     ):
 
-        st.warning(
-            "Pricing is outside the selected regional decision authority. "
-            "The recommendation requires escalation to Pricing / Finance."
+        compatibility_messages.append(
+            "Maximum discount is set to 0%, so no pricing concession "
+            "can be executed under the current constraint."
         )
 
 
-    elif (
-        selected_action == "Protect Enterprise Renewals"
-        and budget < 100000
-    ):
+    if compatibility_messages:
 
-        st.warning(
-            "The selected budget may constrain the proposed account-recovery "
-            "program. Consider narrowing the target account set."
+        st.error(
+            "Action is NOT compatible with the current constraints."
         )
 
+        for message in compatibility_messages:
+
+            st.warning(
+                message
+            )
 
     else:
 
         st.success(
-            "Selected action is compatible with the current prototype constraints."
+            "Action is compatible with the current prototype constraints."
         )
 
 
     # -----------------------------------------------------
-    # CHALLENGE THE RECOMMENDATION
+    # CHALLENGE RECOMMENDATION
     # -----------------------------------------------------
 
-    st.markdown(
-        "### Challenge the Recommendation"
-    )
+    st.markdown("### Challenge the Recommendation")
 
 
     challenge = st.radio(
@@ -1462,26 +1354,25 @@ elif page == "Decision Workspace":
 
 
         st.info(
-            f"The engine will investigate {alternative_driver} as "
-            "an alternative hypothesis and compare its evidence "
-            "against the current leading driver."
+            f"{alternative_driver} will be treated as an alternative "
+            "hypothesis and compared against the current leading driver."
         )
 
 
     elif challenge == "Evidence is missing":
 
         st.info(
-            "Suggested evidence: account-level churn, channel-level "
-            "performance, operational incident logs and affected-vs-"
-            "unaffected regional comparisons."
+            "Suggested evidence to collect: account-level churn, "
+            "channel-level performance, operational incident logs "
+            "and affected-vs-unaffected regional comparisons."
         )
 
 
     else:
 
         st.info(
-            "The recommendation should be filtered through business "
-            "constraints and decision rights before approval."
+            "The selected action should not be approved until its "
+            "business feasibility and decision rights are validated."
         )
 
 
@@ -1526,13 +1417,19 @@ elif page == "Decision Workspace":
     )
 
 
+    can_approve = (
+        len(compatibility_messages) == 0
+        and challenge == "I agree"
+    )
+
+
     understand = st.checkbox(
         "I understand the evidence and uncertainty and want to approve this action.",
         key="approve_understanding"
     )
 
 
-    if understand:
+    if can_approve and understand:
 
         if st.button(
             "Approve Action",
@@ -1548,64 +1445,69 @@ elif page == "Decision Workspace":
             )
 
 
+    elif not compatibility_messages and not understand:
+
+        st.caption(
+            "Review the evidence and confirm the approval acknowledgement."
+        )
+
+
+    elif compatibility_messages:
+
+        st.warning(
+            "This action cannot be approved until the current constraints are resolved."
+        )
+
+
     # -----------------------------------------------------
     # MONITOR OUTCOME
     # -----------------------------------------------------
 
-    st.markdown(
-        "### Monitor Outcome"
-    )
+    st.markdown("### Monitor Outcome")
 
 
     if st.session_state.approved_action:
 
         approved = st.session_state.approved_action
-        approved_data = actions[approved]
+        approved_data = ACTIONS[approved]
 
 
         st.markdown(
-            f"""
-            <div class="insight-box">
+            "#### Active Monitoring Plan"
+        )
 
-                <b>Status</b><br>
-                {st.session_state.decision_status}
 
-                <br><br>
+        monitoring = pd.DataFrame(
+            {
+                "Monitoring Item": [
+                    "Approved Action",
+                    "Owner",
+                    "Metrics",
+                    "Review Frequency",
+                    "Outcome"
+                ],
+                "Value": [
+                    approved,
+                    approved_data["owner"],
+                    "Revenue, Enterprise Volume, Retention, Fulfilment SLA, Support Activity",
+                    "Weekly",
+                    "Pending measurement"
+                ]
+            }
+        )
 
-                <b>Approved Action</b><br>
-                {approved}
 
-                <br><br>
-
-                <b>Owner</b><br>
-                {approved_data["owner"]}
-
-                <br><br>
-
-                <b>Metrics to Monitor</b><br>
-                Revenue · Enterprise Volume · Retention ·
-                Fulfilment SLA · Support Activity
-
-                <br><br>
-
-                <b>Review Frequency</b><br>
-                Weekly
-
-                <br><br>
-
-                <b>Outcome</b><br>
-                Pending measurement
-
-            </div>
-            """,
-            unsafe_allow_html=True
+        st.dataframe(
+            monitoring,
+            use_container_width=True,
+            hide_index=True
         )
 
 
     else:
 
         st.caption(
-            "Approve an action to activate its monitoring plan."
+            "Approve a compatible action to activate its monitoring plan."
         )
 
 
@@ -1663,9 +1565,7 @@ elif page == "Evidence & Lineage":
     )
 
 
-    st.markdown(
-        "### KPI Lineage"
-    )
+    st.markdown("### KPI Lineage")
 
 
     st.code(
@@ -1690,9 +1590,7 @@ Narrative + Recommendation
     )
 
 
-    st.markdown(
-        "### Evidence Classification"
-    )
+    st.markdown("### Evidence Classification")
 
 
     evidence_classes = pd.DataFrame(
@@ -1741,13 +1639,7 @@ elif page == "Governance & Telemetry":
     )
 
 
-    # -----------------------------------------------------
-    # SECURITY
-    # -----------------------------------------------------
-
-    st.markdown(
-        "### Security & Access"
-    )
+    st.markdown("### Security & Access")
 
 
     security = pd.DataFrame(
@@ -1778,13 +1670,7 @@ elif page == "Governance & Telemetry":
     )
 
 
-    # -----------------------------------------------------
-    # DATA GOVERNANCE
-    # -----------------------------------------------------
-
-    st.markdown(
-        "### Data Governance"
-    )
+    st.markdown("### Data Governance")
 
 
     governance = pd.DataFrame(
@@ -1816,13 +1702,7 @@ elif page == "Governance & Telemetry":
     )
 
 
-    # -----------------------------------------------------
-    # TELEMETRY
-    # -----------------------------------------------------
-
-    st.markdown(
-        "### Runtime Telemetry"
-    )
+    st.markdown("### Runtime Telemetry")
 
 
     telemetry = engine.telemetry
@@ -1836,8 +1716,6 @@ elif page == "Governance & Telemetry":
         f"{telemetry['latency_ms']} ms"
     )
 
-
-    # No live LLM is used in this prototype.
 
     c2.metric(
         "LLM Calls",
@@ -1859,18 +1737,11 @@ elif page == "Governance & Telemetry":
 
     st.caption(
         "The current prototype does not make live LLM/API calls. "
-        "LLM calls, token usage and model cost therefore remain zero. "
-        "Analytical latency measures deterministic processing."
+        "LLM calls, token usage and model cost therefore remain zero."
     )
 
 
-    # -----------------------------------------------------
-    # LLM VS NON-LLM
-    # -----------------------------------------------------
-
-    st.markdown(
-        "### LLM vs Non-LLM Processing"
-    )
+    st.markdown("### LLM vs Non-LLM Processing")
 
 
     processing = pd.DataFrame(
@@ -1900,7 +1771,7 @@ elif page == "Governance & Telemetry":
                 "Find relevant qualitative evidence",
                 "Avoid unsupported certainty",
                 "Controlled evidence-grounded output",
-                "Respect business constraints and decision rights"
+                "Respect constraints and decision rights"
             ]
         }
     )
