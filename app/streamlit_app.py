@@ -42,12 +42,42 @@ st.markdown(
         padding-bottom: 3rem;
     }
 
-    section[data-testid="stSidebar"] {
-        background-color: #111827;
-    }
+section[data-testid="stSidebar"] {
+    background-color: #111827;
+}
 
-    section[data-testid="stSidebar"] * {
-        color: #F9FAFB !important;
+/* Sidebar headings and labels */
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] p {
+    color: #F9FAFB !important;
+}
+
+/* Navigation radio buttons */
+section[data-testid="stSidebar"] div[role="radiogroup"] label {
+    color: #F9FAFB !important;
+}
+
+/* Selectbox text and labels */
+section[data-testid="stSidebar"] div[data-baseweb="select"] {
+    color: #111827 !important;
+    background-color: #FFFFFF !important;
+}
+
+section[data-testid="stSidebar"] div[data-baseweb="select"] * {
+    color: #111827 !important;
+}
+
+/* Selectbox dropdown */
+div[data-baseweb="popover"] {
+    background-color: #FFFFFF !important;
+}
+
+div[data-baseweb="popover"] * {
+    color: #111827 !important;
+}
     }
 
     .brand {
@@ -219,7 +249,7 @@ page = st.sidebar.radio(
 st.sidebar.markdown("---")
 
 persona = st.sidebar.selectbox(
-    "VIEW AS",
+    "Select Role",
     ["CEO", "Sales Manager", "Analyst"]
 )
 
