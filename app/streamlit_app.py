@@ -1056,7 +1056,7 @@ elif page == "Governance & Telemetry":
 # =========================================================
 # FEEDBACK & LEARNING
 # =========================================================
-if page == "Feedback/Comments":
+elif page == "Feedback/Comments":
 
     st.markdown(
         '<div class="section-title">Feedback & Learning</div>',
@@ -1227,7 +1227,7 @@ st.markdown(
 # =========================================================
 # FEEDBACK & COMMENTS
 # =========================================================
-elif page == "Feedback/Comments":
+if page == "Feedback/Comments":
 
     st.markdown(
         '<div class="section-title">Feedback & Learning</div>',
