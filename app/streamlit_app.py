@@ -1224,3 +1224,187 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+# =========================================================
+# FEEDBACK & COMMENTS
+# =========================================================
+elif page == "Feedback/Comments":
+
+    st.markdown(
+        '<div class="section-title">Feedback & Learning</div>',
+        unsafe_allow_html=True
+    )
+
+    st.write(
+        "Tell us what worked, what needs improvement, or where the engine "
+        "could provide better intelligence."
+    )
+
+    # -----------------------------------------------------
+    # FEEDBACK INTRO
+    # -----------------------------------------------------
+    st.info(
+        "Your feedback helps improve BusinessIntelligence.ai across "
+        "analytics, recommendations, evidence quality, governance and "
+        "the overall decision-making experience."
+    )
+
+    # -----------------------------------------------------
+    # WHAT PART ARE YOU REVIEWING?
+    # -----------------------------------------------------
+    st.markdown("### What would you like to review?")
+
+    feedback_area = st.selectbox(
+        "Select area",
+        [
+            "Overview",
+            "KPI Intelligence",
+            "Decision Workspace",
+            "Evidence & Lineage",
+            "Governance & Telemetry",
+            "Overall Experience"
+        ],
+        key="feedback_area"
+    )
+
+    # -----------------------------------------------------
+    # FEEDBACK TYPE
+    # -----------------------------------------------------
+    st.markdown("### What would you like to tell us?")
+
+    feedback_type = st.selectbox(
+        "Feedback type",
+        [
+            "This section was useful",
+            "This section was confusing",
+            "Incorrect driver",
+            "Missing evidence",
+            "Confidence was too high",
+            "Confidence was too low",
+            "Recommendation was not practical",
+            "Data or metric issue",
+            "Security or access issue",
+            "Performance or latency issue",
+            "Other"
+        ],
+        key="feedback_type"
+    )
+
+    # -----------------------------------------------------
+    # ROLE
+    # -----------------------------------------------------
+    feedback_role = st.selectbox(
+        "Select your role",
+        [
+            "CEO",
+            "Sales Manager",
+            "Analyst"
+        ],
+        key="feedback_role"
+    )
+
+    # -----------------------------------------------------
+    # COMMENT
+    # -----------------------------------------------------
+    comment = st.text_area(
+        "Comment",
+        placeholder=(
+            "Tell us what was correct, incorrect, missing, "
+            "confusing, or what should be improved..."
+        ),
+        height=160,
+        key="feedback_comment"
+    )
+
+    # -----------------------------------------------------
+    # SUBMIT
+    # -----------------------------------------------------
+    if st.button(
+        "Submit Feedback",
+        type="primary",
+        key="submit_feedback"
+    ):
+
+        if not comment.strip():
+
+            st.warning(
+                "Please enter a comment before submitting."
+            )
+
+        else:
+
+            if "feedback_history" not in st.session_state:
+                st.session_state.feedback_history = []
+
+            st.session_state.feedback_history.append(
+                {
+                    "Area": feedback_area,
+                    "Role": feedback_role,
+                    "Feedback": feedback_type,
+                    "Comment": comment
+                }
+            )
+
+            st.success(
+                f"Feedback captured for {feedback_area}."
+            )
+
+            st.caption(
+                "In production, this feedback would be stored in a governed "
+                "feedback system for evaluation, calibration and continuous improvement."
+            )
+
+    # -----------------------------------------------------
+    # RECENT FEEDBACK
+    # -----------------------------------------------------
+    st.markdown("### Recent Feedback")
+
+    if "feedback_history" not in st.session_state:
+        st.session_state.feedback_history = []
+
+    if len(st.session_state.feedback_history) == 0:
+
+        st.caption(
+            "No feedback submitted yet."
+        )
+
+    else:
+
+        feedback_df = pd.DataFrame(
+            st.session_state.feedback_history
+        )
+
+        st.dataframe(
+            feedback_df,
+            use_container_width=True,
+            hide_index=True
+        )
+
+    # -----------------------------------------------------
+    # FEEDBACK → LEARNING LOOP
+    # -----------------------------------------------------
+    st.markdown("### How Feedback Improves the Engine")
+
+    learning_loop = pd.DataFrame(
+        {
+            "Feedback Area": [
+                "KPI Intelligence",
+                "Decision Workspace",
+                "Evidence & Lineage",
+                "Governance & Telemetry",
+                "Overview"
+            ],
+            "Improvement Focus": [
+                "Driver ranking and confidence",
+                "Recommendation quality and decision usefulness",
+                "Evidence retrieval and traceability",
+                "Security, latency, cost and system reliability",
+                "Clarity and business usability"
+            ]
+        }
+    )
+
+    st.dataframe(
+        learning_loop,
+        use_container_width=True,
+        hide_index=True
+    )
