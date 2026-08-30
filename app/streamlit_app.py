@@ -242,7 +242,8 @@ page = st.sidebar.radio(
         "KPI Intelligence",
         "Decision Workspace",
         "Evidence & Lineage",
-        "Governance & Telemetry"
+        "Governance & Telemetry",
+        "Feedback/Comments"
     ]
 )
 
@@ -994,10 +995,43 @@ else:
         hide_index=True
     )
 
-    st.markdown("### Analyst Feedback")
+# =========================================================
+# FEEDBACK
+# =========================================================
+elif page == "Feedback":
+
+    st.markdown(
+        '<div class="section-title">Feedback & Learning</div>',
+        unsafe_allow_html=True
+    )
+
+    st.write(
+        "Your feedback helps BusinessIntelligence.ai improve driver accuracy, "
+        "confidence calibration, evidence quality and recommended actions."
+    )
+
+    st.markdown(
+        """
+        <div class="insight-box">
+            <b>Human-in-the-loop learning</b><br><br>
+
+            Business users and analysts can validate an insight, identify
+            incorrect drivers, flag missing evidence or challenge the confidence
+            level assigned by the engine.
+
+            <br><br>
+
+            In a production system, this feedback would be captured as labelled
+            evaluation data for continuous improvement.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown("### Insight Feedback")
 
     feedback = st.selectbox(
-        "How useful was this insight?",
+        "How useful was the insight?",
         [
             "Useful",
             "Partially useful",
@@ -1007,16 +1041,64 @@ else:
         ]
     )
 
-    if st.button("Submit Feedback"):
-        st.success(
-            f"Feedback captured: {feedback}"
-        )
+    comment = st.text_area(
+        "Comment",
+        placeholder=(
+            "Tell us what was correct, incorrect, missing, "
+            "or what the engine should have considered..."
+        ),
+        height=140
+    )
 
-        st.caption(
-            "Production implementation would use this feedback for evaluation, "
-            "confidence calibration and analyst-review workflows."
-        )
+    submitted = st.button(
+        "Submit Feedback",
+        type="primary"
+    )
 
+    if submitted:
+
+        if comment.strip():
+
+            st.success(
+                "Thank you. Your feedback has been captured."
+            )
+
+            st.info(
+                f"Feedback type: {feedback}"
+            )
+
+        else:
+
+            st.warning(
+                "Please add a comment before submitting."
+            )
+
+    st.markdown("### Feedback Categories")
+
+    feedback_categories = pd.DataFrame(
+        {
+            "Category": [
+                "Useful",
+                "Incorrect Driver",
+                "Missing Evidence",
+                "Wrong Confidence",
+                "Partially Useful"
+            ],
+            "How It Helps": [
+                "Confirms high-quality insights",
+                "Improves driver ranking",
+                "Improves evidence retrieval",
+                "Improves confidence calibration",
+                "Identifies areas needing refinement"
+            ]
+        }
+    )
+
+    st.dataframe(
+        feedback_categories,
+        use_container_width=True,
+        hide_index=True
+    )
 
 # =========================================================
 # FOOTER
