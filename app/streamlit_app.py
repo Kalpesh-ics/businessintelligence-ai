@@ -1,120 +1,974 @@
 from __future__ import annotations
-import json,os,sys
+
+import json
+import os
+import sys
+from typing import Any
+
 import pandas as pd
 import streamlit as st
-ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),".."))
-if ROOT not in sys.path: sys.path.append(ROOT)
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
 from engine.core import KPIEngine
-from engine.ai_assistant import ask_bi,apply_telemetry,has_api_key,get_model
+from engine.ai_assistant import (
+    ask_bi,
+    apply_telemetry,
+    get_model,
+    has_api_key,
+)
 
-st.set_page_config(page_title="BusinessIntelligence.ai",page_icon="📊",layout="wide",initial_sidebar_state="expanded")
-st.markdown('''<style>.stApp{background:#F7F8FC}.block-container{max-width:1450px;padding-top:1.8rem;padding-bottom:3rem}section[data-testid="stSidebar"]{background:#111827}section[data-testid="stSidebar"] h1,section[data-testid="stSidebar"] h2,section[data-testid="stSidebar"] h3,section[data-testid="stSidebar"] label,section[data-testid="stSidebar"] p{color:#F9FAFB!important}section[data-testid="stSidebar"] div[role="radiogroup"] label{color:#F9FAFB!important}section[data-testid="stSidebar"] div[data-baseweb="select"]{background:#fff!important;color:#111827!important}section[data-testid="stSidebar"] div[data-baseweb="select"] *{color:#111827!important}div[data-baseweb="popover"]{background:#fff!important}div[data-baseweb="popover"] *{color:#111827!important}</style>''',unsafe_allow_html=True)
 
-if "engine" not in st.session_state: st.session_state.engine=KPIEngine()
-if "feedback_history" not in st.session_state: st.session_state.feedback_history=[]
-if "chat_history" not in st.session_state: st.session_state.chat_history=[]
-if "available_budget" not in st.session_state: st.session_state.available_budget=100000
-if "max_discount_pct" not in st.session_state: st.session_state.max_discount_pct=10.0
-if "authority" not in st.session_state: st.session_state.authority="Business Unit"
-if "selected_action" not in st.session_state: st.session_state.selected_action="Protect Enterprise Renewals"
-if "approved_action" not in st.session_state: st.session_state.approved_action=None
-engine=st.session_state.engine
+st.set_page_config(
+    page_title="BusinessIntelligence.ai",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
-st.sidebar.markdown("## BusinessIntelligence.ai"); st.sidebar.caption("Intelligence-to-Action Platform"); st.sidebar.markdown("---")
-page=st.sidebar.radio("NAVIGATION",["Overview","KPI Intelligence","BI.ai Assistant","Decision Workspace","Evidence & Lineage","Governance & Telemetry","Feedback/Comments"])
-st.sidebar.markdown("---"); persona=st.sidebar.selectbox("Select Role",["CEO","Sales Manager","Analyst"]); st.sidebar.markdown("---"); st.sidebar.caption("Round 2 Prototype"); st.sidebar.caption("Synthetic enterprise data")
-context=engine.build_context(persona,int(st.session_state.available_budget),float(st.session_state.max_discount_pct),st.session_state.authority,st.session_state.selected_action)
-st.title("BusinessIntelligence.ai"); st.caption("AI-powered KPI Intelligence-to-Action Engine")
+# =========================================================
+# SESSION STATE
+# =========================================================
+if "engine" not in st.session_state:
+    st.session_state.engine = KPIEngine()
 
-if page=="Overview":
-    st.subheader("Business Intelligence Command Center"); st.write("Monitor business performance, understand what changed, inspect the evidence behind KPI movements, ask BI.ai questions, and turn evidence into practical actions.")
+if "persona" not in st.session_state:
+    st.session_state.persona = "CEO"
+
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+if "feedback_history" not in st.session_state:
+    st.session_state.feedback_history = []
+
+if "available_budget" not in st.session_state:
+    st.session_state.available_budget = 100_000
+
+if "max_discount_pct" not in st.session_state:
+    st.session_state.max_discount_pct = 10.0
+
+if "authority" not in st.session_state:
+    st.session_state.authority = "Business Unit"
+
+if "selected_action" not in st.session_state:
+    st.session_state.selected_action = "Protect Enterprise Renewals"
+
+if "approved_action" not in st.session_state:
+    st.session_state.approved_action = None
+
+
+engine: KPIEngine = st.session_state.engine
+
+
+# =========================================================
+# SIDEBAR
+# =========================================================
+st.sidebar.title("BusinessIntelligence.ai")
+st.sidebar.caption("Intelligence-to-Action Platform")
+st.sidebar.divider()
+
+page = st.sidebar.radio(
+    "NAVIGATION",
+    [
+        "Overview",
+        "KPI Intelligence",
+        "BI.ai Assistant",
+        "Decision Workspace",
+        "Evidence & Lineage",
+        "Governance & Telemetry",
+        "Feedback/Comments",
+    ],
+)
+
+st.sidebar.divider()
+
+persona = st.sidebar.selectbox(
+    "Select Role",
+    ["CEO", "Sales Manager", "Analyst"],
+    index=["CEO", "Sales Manager", "Analyst"].index(
+        st.session_state.persona
+    ),
+)
+st.session_state.persona = persona
+
+st.sidebar.divider()
+st.sidebar.caption("Round 2 Prototype")
+st.sidebar.caption("Synthetic enterprise data")
+
+
+# =========================================================
+# SHARED CONTEXT
+# =========================================================
+context = engine.build_context(
+    persona=persona,
+    available_budget=int(st.session_state.available_budget),
+    max_discount_pct=float(st.session_state.max_discount_pct),
+    authority=st.session_state.authority,
+    selected_action=st.session_state.selected_action,
+)
+
+
+# =========================================================
+# HEADER
+# =========================================================
+st.title("BusinessIntelligence.ai")
+st.caption("AI-powered KPI Intelligence-to-Action Engine")
+
+
+# =========================================================
+# OVERVIEW
+# =========================================================
+if page == "Overview":
+    st.subheader("Business Intelligence Command Center")
+    st.write(
+        "Monitor performance, understand KPI movement, inspect evidence, "
+        "ask BI.ai questions and evaluate practical business actions."
+    )
+
     st.markdown("### Key Business Metrics")
-    items=[("Revenue","Total income generated by the business."),("Gross Margin","Revenue remaining after direct delivery costs."),("Customer Retention","How effectively the business keeps existing customers."),("Customer Acquisition Cost","Cost required to acquire a new customer."),("Conversion Rate","How effectively prospects become customers."),("Fulfilment SLA","Operational reliability against customer commitments.")]
-    cols=st.columns(3)
-    for i,(n,d) in enumerate(items):
-        with cols[i%3]: st.info(f"**{n}**\n\n{d}")
+    business_metrics = [
+        ("Revenue", "Total income generated by the business."),
+        ("Gross Margin", "Revenue remaining after direct delivery costs."),
+        ("Customer Retention", "How effectively the business keeps customers."),
+        ("Customer Acquisition Cost", "Cost required to acquire a customer."),
+        ("Conversion Rate", "How effectively prospects become customers."),
+        ("Fulfilment SLA", "Operational reliability against commitments."),
+    ]
+    cols = st.columns(3)
+    for i, (name, description) in enumerate(business_metrics):
+        with cols[i % 3]:
+            st.info(f"**{name}**\n\n{description}")
+
     st.markdown("### Key Business Signals")
-    signals=[("Revenue","Higher revenue generally indicates stronger business income.","Higher → positive","Lower → revenue pressure"),("Gross Margin","Higher margin generally indicates stronger profitability.","Higher → better profitability","Lower → margin pressure"),("Customer Retention","Higher retention means fewer customers are leaving.","Higher → lower churn risk","Lower → higher churn risk"),("Customer Acquisition Cost","Lower acquisition cost generally means more efficient acquisition.","Lower → better efficiency","Higher → acquisition pressure"),("Conversion Rate","Higher conversion means more prospects become customers.","Higher → stronger funnel","Lower → weaker sales efficiency"),("Fulfilment SLA","Higher SLA performance means more commitments are being met.","Higher → stronger reliability","Lower → service risk")]
-    for n,e,p,m in signals:
-        st.markdown(f"**{n}**"); st.write(e); c1,c2=st.columns(2); c1.success(f"↑ {p}"); c2.warning(f"↓ {m}")
-    st.markdown("### Explore BusinessIntelligence.ai"); c1,c2,c3=st.columns(3); c1.info("**KPI Intelligence**\n\nInvestigate material movements and driver contributions."); c2.info("**BI.ai Assistant**\n\nAsk natural-language questions using the latest prototype context."); c3.info("**Decision Workspace**\n\nEvaluate actions against owners, budget and decision rights.")
+    signals = [
+        ("Revenue", "Higher revenue generally indicates stronger business income.",
+         "Higher → positive", "Lower → revenue pressure"),
+        ("Gross Margin", "Higher margin generally indicates stronger profitability.",
+         "Higher → better profitability", "Lower → margin pressure"),
+        ("Customer Retention", "Higher retention means fewer customers are leaving.",
+         "Higher → lower churn risk", "Lower → higher churn risk"),
+        ("Customer Acquisition Cost", "Lower acquisition cost generally means more efficient acquisition.",
+         "Lower → better efficiency", "Higher → acquisition pressure"),
+        ("Conversion Rate", "Higher conversion means more prospects become customers.",
+         "Higher → stronger funnel", "Lower → weaker sales efficiency"),
+        ("Fulfilment SLA", "Higher SLA performance means more commitments are met.",
+         "Higher → stronger reliability", "Lower → service risk"),
+    ]
 
-elif page=="KPI Intelligence":
-    st.subheader("KPI Intelligence"); st.write("Move from KPI movement → quantified drivers → supporting evidence → confidence.")
-    scenario=st.selectbox("Select Investigation",["Multi-factor Revenue Movement","Low Confidence / Abstention","Sparse History / New KPI"],key="kpi_scenario")
-    if scenario=="Multi-factor Revenue Movement":
-        st.markdown("### US-West Revenue"); c1,c2,c3,c4=st.columns(4); c1.metric("Current Revenue","$91.8M","-8.2%"); c2.metric("Baseline","$100.0M"); c3.metric("Business Impact","$8.2M"); c4.metric("Materiality","HIGH")
-        mat=engine.detect_materiality(91_800_000,engine.BASELINE_REVENUE_SERIES); st.markdown("### 1. Detect Material Movement"); st.success(f"Detection method: {mat['method']}"); c1,c2,c3=st.columns(3); c1.metric("Deviation",f"{mat['pct_change']:.1%}"); c2.metric("Z-score",f"{mat['z_score']:.2f}"); c3.metric("Material Movement","YES" if mat["is_material"] else "NO")
-        st.markdown("### 2. Driver Contribution"); contrib=pd.DataFrame(engine.get_revenue_contributions()); st.bar_chart(contrib.set_index("Driver")[["Contribution (%)"]]); display=contrib.copy(); display["Impact ($)"]=display["Impact ($)"].map(lambda x:f"${x:,.0f}"); st.dataframe(display,use_container_width=True,hide_index=True); st.caption("Contribution is calculated before language generation.")
-        st.markdown("### 3. Supporting Evidence");
-        for item in engine.retrieve_unstructured_evidence("Enterprise Cloud Hosting"):
-            with st.expander(f"{item['source']} · {item['freshness']}"): st.write(item["text"]); st.caption(f"{item['type']} · {item['classification']}")
-        st.markdown("### 4. Confidence"); conf=engine.determine_confidence(0.7,engine.EVIDENCE); (st.success if conf.startswith("HIGH") else st.warning)(conf)
-        st.markdown("### 5. Business Narrative"); st.info(engine.generate_narrative(persona,mat,conf)); st.caption("Deterministic narrative in prototype; BI.ai is the live language interaction layer.")
-    elif scenario=="Low Confidence / Abstention":
-        st.markdown("### Q3 Marketing ROI"); c1,c2,c3=st.columns(3); c1.metric("ROI Movement","-12.4%"); c2.metric("Data Completeness","62%"); c3.metric("Confidence","LOW"); st.warning("Google Ads API data and Salesforce attribution are out of sync."); st.error("ABSTAIN — A causal root cause cannot be established from the available evidence."); st.write("Recommended next step: restore the attribution pipeline and validate channel-level conversion data before taking corrective action.")
+    for name, explanation, positive, negative in signals:
+        st.markdown(f"**{name}**")
+        st.write(explanation)
+        c1, c2 = st.columns(2)
+        c1.success(f"↑ {positive}")
+        c2.warning(f"↓ {negative}")
+
+    st.markdown("### Explore")
+    a, b, c = st.columns(3)
+    with a:
+        st.info(
+            "**KPI Intelligence**\n\n"
+            "Detect material movement and quantify drivers."
+        )
+    with b:
+        st.info(
+            "**BI.ai Assistant**\n\n"
+            "Ask natural-language business questions against current context."
+        )
+    with c:
+        st.info(
+            "**Decision Workspace**\n\n"
+            "Evaluate actions using evidence and constraints."
+        )
+
+
+# =========================================================
+# KPI INTELLIGENCE
+# =========================================================
+elif page == "KPI Intelligence":
+    st.subheader("KPI Intelligence")
+    st.write(
+        "Follow the analytical chain: movement → driver → evidence → confidence."
+    )
+
+    scenario = st.selectbox(
+        "Select Investigation",
+        [
+            "Multi-factor Revenue Movement",
+            "Low Confidence / Abstention",
+            "Sparse History / New KPI",
+        ],
+        key="kpi_scenario",
+    )
+
+    if scenario == "Multi-factor Revenue Movement":
+        st.markdown("### US-West Revenue")
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Current Revenue", "$91.8M", "-8.2%")
+        c2.metric("Baseline", "$100.0M")
+        c3.metric("Business Impact", "$8.2M")
+        c4.metric("Materiality", "HIGH")
+
+        mat = engine.detect_materiality(
+            engine.CURRENT_REVENUE,
+            engine.BASELINE_REVENUE_SERIES,
+        )
+
+        st.markdown("### 1. Detect Material Movement")
+        st.success(f"Detection method: {mat['method']}")
+
+        a, b, c = st.columns(3)
+        a.metric("Deviation", f"{mat['pct_change']:.1%}")
+        b.metric("Z-score", f"{mat['z_score']:.2f}")
+        c.metric(
+            "Material Movement",
+            "YES" if mat["is_material"] else "NO",
+        )
+
+        st.markdown("### 2. Driver Contribution")
+        contribution = pd.DataFrame(engine.get_revenue_contributions())
+
+        display_contribution = contribution.copy()
+        display_contribution["Impact ($)"] = display_contribution[
+            "Impact ($)"
+        ].map(lambda x: f"${x:,.0f}")
+
+        st.bar_chart(
+            contribution.set_index("Driver")[["Contribution (%)"]]
+        )
+        st.dataframe(
+            display_contribution,
+            use_container_width=True,
+            hide_index=True,
+        )
+
+        st.markdown("### 3. Supporting Evidence")
+        evidence = engine.retrieve_unstructured_evidence(
+            "Enterprise Cloud Hosting"
+        )
+
+        for item in evidence:
+            with st.expander(
+                f"{item['source']} · {item['freshness']}"
+            ):
+                st.write(item["text"])
+                st.caption(
+                    f"{item['type']} · {item['classification']}"
+                )
+
+        st.markdown("### 4. Confidence")
+        confidence = engine.determine_confidence(0.7, evidence)
+
+        if confidence.startswith("HIGH"):
+            st.success(confidence)
+        elif confidence.startswith("MEDIUM"):
+            st.warning(confidence)
+        else:
+            st.error(confidence)
+
+        st.markdown("### 5. Business Narrative")
+        st.info(
+            engine.generate_narrative(
+                persona,
+                mat,
+                confidence,
+            )
+        )
+
+        st.caption(
+            "Quantitative analysis is deterministic; BI.ai is the "
+            "natural-language interaction layer."
+        )
+
+    elif scenario == "Low Confidence / Abstention":
+        st.markdown("### Q3 Marketing ROI")
+
+        c1, c2, c3 = st.columns(3)
+        c1.metric("ROI Movement", "-12.4%")
+        c2.metric("Data Completeness", "62%")
+        c3.metric("Confidence", "LOW")
+
+        st.warning(
+            "Google Ads attribution and Salesforce attribution are out of sync."
+        )
+        st.error(
+            "ABSTAIN — A causal root cause cannot be established "
+            "from the available evidence."
+        )
+        st.write(
+            "Restore the attribution pipeline and validate "
+            "channel-level conversion data before taking corrective action."
+        )
+
     else:
-        st.markdown("### New Product — AI Data Center Nodes"); c1,c2,c3=st.columns(3); c1.metric("Weekly Active Users","480"); c2.metric("Historical Observations","5"); c3.metric("Confidence","LOW"); mat=engine.detect_materiality(480,[500,520,510,540,530]); st.warning("Sparse history detected — conventional long-term anomaly detection is unreliable."); st.success(f"Selected analytical method: {mat['method']}"); st.write("The engine switches methodology because five observations are insufficient for a stable conventional long-term baseline.")
+        st.markdown("### New Product — AI Data Center Nodes")
 
-elif page=="BI.ai Assistant":
-    st.subheader("BI.ai"); st.write(f"Ask questions about the latest KPI movement, evidence, confidence, actions, constraints and governance. Current role: **{persona}**.")
-    if has_api_key(): st.success(f"Live BI.ai enabled · model: {get_model()}")
-    else: st.warning("BI.ai is not connected yet. Add OPENAI_API_KEY to Streamlit Secrets to enable live natural-language answers.")
-    st.markdown("### Suggested questions")
-    for q in ["Why did US-West revenue decline?","What is the strongest quantified driver?","What evidence supports the current explanation?","What should we do next?","Is pricing a good intervention?","What happens if we do nothing?","Why is Marketing ROI abstaining?","Why did the new KPI switch methodology?"]: st.caption(f"• {q}")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Weekly Active Users", "480")
+        c2.metric("Historical Observations", "5")
+        c3.metric("Confidence", "LOW")
+
+        mat = engine.detect_materiality(
+            480,
+            [500, 520, 510, 540, 530],
+        )
+
+        st.warning(
+            "Sparse history detected — conventional long-term anomaly "
+            "detection is unreliable."
+        )
+        st.success(
+            f"Selected analytical method: {mat['method']}"
+        )
+        st.write(
+            "The engine switches methodology because the KPI has only "
+            "five historical observations."
+        )
+
+
+# =========================================================
+# BI.AI ASSISTANT
+# =========================================================
+elif page == "BI.ai Assistant":
+    st.subheader("BI.ai")
+    st.write(
+        f"Ask about the latest KPI movement, drivers, evidence, confidence, "
+        f"actions, constraints and governance. Current role: **{persona}**."
+    )
+
+    if has_api_key():
+        st.success(f"Live BI.ai connected · {get_model()}")
+    else:
+        st.warning(
+            "BI.ai is currently disconnected. Add OPENAI_API_KEY under "
+            "Streamlit Cloud → Settings → Secrets."
+        )
+
+    st.markdown("### Try asking")
+    suggestions = [
+        "Why did US-West revenue decline?",
+        "What is the strongest quantified driver?",
+        "What evidence supports that driver?",
+        "What should we do next?",
+        "Is pricing a good intervention?",
+        "What happens if we do nothing?",
+        "Why is Marketing ROI abstaining?",
+        "Why did the new KPI switch methodology?",
+    ]
+
+    for q in suggestions:
+        st.caption(f"• {q}")
+
     st.markdown("### Conversation")
-    for m in st.session_state.chat_history:
-        with st.chat_message(m["role"]): st.write(m["content"]); m.get("meta") and st.caption(m["meta"])
-    question=st.chat_input("Ask BI.ai a business question...")
+
+    for msg in st.session_state.chat_history:
+        with st.chat_message(msg["role"]):
+            st.write(msg["content"])
+            if msg.get("meta"):
+                st.caption(msg["meta"])
+
+    question = st.chat_input("Ask BI.ai a business question")
+
     if question:
-        st.session_state.chat_history.append({"role":"user","content":question})
-        with st.chat_message("user"): st.write(question)
+        st.session_state.chat_history.append(
+            {
+                "role": "user",
+                "content": question,
+            }
+        )
+
+        with st.chat_message("user"):
+            st.write(question)
+
         with st.chat_message("assistant"):
-            with st.spinner("Analysing current business context..."):
-                result=ask_bi(question,json.dumps(context,indent=2,default=str)); apply_telemetry(engine,result)
-            if result["status"]=="success":
-                answer=result["answer"] or "I could not produce an answer from the current context."; st.write(answer); meta=f"{result['model']} · {result['usage']['total_tokens']:,} tokens · {result['latency_ms']} ms"; st.caption(meta); st.session_state.chat_history.append({"role":"assistant","content":answer,"meta":meta})
-            else: st.error(result["error"]); st.caption("No answer was generated. Configure the API key and try again.")
-    if st.button("Clear BI.ai conversation"): st.session_state.chat_history=[]; st.rerun()
+            with st.spinner("Analysing the current business context..."):
+                result = ask_bi(
+                    question,
+                    json.dumps(
+                        context,
+                        indent=2,
+                        default=str,
+                    ),
+                )
+                apply_telemetry(engine, result)
 
-elif page=="Decision Workspace":
-    st.subheader("Decision Workspace"); st.write(f"Recommendations are tailored for the selected persona: **{persona}**")
-    st.markdown("### Active Decision"); c1,c2,c3,c4=st.columns(4); c1.metric("Business Signal","Revenue ↓ 8.2%"); c2.metric("Business Impact","$8.2M"); c3.metric("Primary Contributor","Product A Volume"); c4.metric("Confidence","Medium")
-    st.markdown("### Why is this happening?"); why=pd.DataFrame({"Business Signal":["Revenue","Product A Volume","Enterprise Customers","Fulfilment SLA","Support Activity"],"Observed Movement":["↓ 8.2%","↓ 14%","↓ Enterprise volume","↓ 15 pts","↑ 300%"],"Evidence Type":["KPI","Contribution","CRM","Operations","Unstructured"]}); st.dataframe(why,use_container_width=True,hide_index=True)
-    st.markdown("### Evaluate Actions"); actions=list(engine.ACTIONS); selected=st.selectbox("Select action",actions,index=actions.index(st.session_state.selected_action)); st.session_state.selected_action=selected; a=engine.ACTIONS[selected]; c1,c2=st.columns(2); c1.markdown(f"**Driver:** {a['driver']}\n\n**Controllable Lever:** {a['lever']}\n\n**Owner:** {a['owner']}"); c2.markdown(f"**Confidence:** {a['confidence']}\n\n**Expected Impact:** {a['expected_impact']}\n\n**Risk:** {a['risk']}")
-    st.markdown("### Business Constraints"); c1,c2,c3=st.columns(3); st.session_state.available_budget=c1.number_input("Available budget ($)",0,10_000_000,int(st.session_state.available_budget),5000); st.session_state.max_discount_pct=c2.number_input("Maximum discount (%)",0.0,100.0,float(st.session_state.max_discount_pct),1.0); st.session_state.authority=c3.selectbox("Decision authority",["Regional","Business Unit","Enterprise"],index=["Regional","Business Unit","Enterprise"].index(st.session_state.authority))
-    comp=engine.check_action_compatibility(selected,int(st.session_state.available_budget),float(st.session_state.max_discount_pct),st.session_state.authority); st.markdown("### Compatibility Check");
-    if comp["compatible"]: st.success("Action is compatible with the current constraints.")
+            if result["status"] == "success":
+                answer = result["answer"]
+                meta = (
+                    f"Model: {result['model']} · "
+                    f"Tokens: {result['usage']['total_tokens']:,} · "
+                    f"Latency: {result['latency_ms']} ms"
+                )
+                st.write(answer)
+                st.caption(meta)
+
+                st.session_state.chat_history.append(
+                    {
+                        "role": "assistant",
+                        "content": answer,
+                        "meta": meta,
+                    }
+                )
+            else:
+                st.error(result["error"])
+
+    if st.button("Clear BI.ai Conversation"):
+        st.session_state.chat_history = []
+        st.rerun()
+
+
+# =========================================================
+# DECISION WORKSPACE
+# =========================================================
+elif page == "Decision Workspace":
+    st.subheader("Decision Workspace")
+    st.write(
+        f"Recommendations are tailored for **{persona}**."
+    )
+
+    st.markdown("### Active Decision")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Business Signal", "Revenue ↓ 8.2%")
+    c2.metric("Business Impact", "$8.2M")
+    c3.metric("Primary Contributor", "Product A Volume")
+    c4.metric("Confidence", "Medium")
+
+    st.markdown("### Why is this happening?")
+    why_df = pd.DataFrame(
+        {
+            "Business Signal": [
+                "Revenue",
+                "Product A Volume",
+                "Enterprise Customers",
+                "Fulfilment SLA",
+                "Support Activity",
+            ],
+            "Observed Movement": [
+                "↓ 8.2%",
+                "↓ 14%",
+                "↓ Enterprise volume",
+                "↓ 15 pts",
+                "↑ 300%",
+            ],
+            "Evidence Type": [
+                "KPI",
+                "Contribution",
+                "CRM",
+                "Operations",
+                "Unstructured",
+            ],
+        }
+    )
+    st.dataframe(
+        why_df,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.markdown("### Evaluate Actions")
+
+    action_names = list(engine.ACTIONS.keys())
+
+    selected_action = st.selectbox(
+        "Select Action",
+        action_names,
+        index=action_names.index(
+            st.session_state.selected_action
+        ),
+    )
+    st.session_state.selected_action = selected_action
+
+    action = engine.ACTIONS[selected_action]
+
+    a, b = st.columns(2)
+    with a:
+        st.markdown(f"**Driver:** {action['driver']}")
+        st.markdown(f"**Controllable Lever:** {action['lever']}")
+        st.markdown(f"**Owner:** {action['owner']}")
+    with b:
+        st.markdown(f"**Confidence:** {action['confidence']}")
+        st.markdown(f"**Expected Impact:** {action['expected_impact']}")
+        st.markdown(f"**Risk:** {action['risk']}")
+
+    st.markdown("### Business Constraints")
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.session_state.available_budget = st.number_input(
+            "Available Budget ($)",
+            min_value=0,
+            max_value=10_000_000,
+            value=int(st.session_state.available_budget),
+            step=5_000,
+        )
+
+    with c2:
+        st.session_state.max_discount_pct = st.number_input(
+            "Maximum Discount (%)",
+            min_value=0.0,
+            max_value=100.0,
+            value=float(st.session_state.max_discount_pct),
+            step=1.0,
+        )
+
+    with c3:
+        authorities = ["Regional", "Business Unit", "Enterprise"]
+        st.session_state.authority = st.selectbox(
+            "Decision Authority",
+            authorities,
+            index=authorities.index(st.session_state.authority),
+        )
+
+    compatibility = engine.check_action_compatibility(
+        selected_action,
+        int(st.session_state.available_budget),
+        float(st.session_state.max_discount_pct),
+        st.session_state.authority,
+    )
+
+    st.markdown("### Compatibility Check")
+
+    if compatibility["compatible"]:
+        st.success("Action is compatible with the current constraints.")
     else:
-        for issue in comp["issues"]: st.error(issue)
-    st.markdown("### Challenge Recommendation"); challenge=st.radio("How would you assess the recommendation?",["I agree","I think the driver is wrong","Evidence missing","Action not feasible"])
-    if challenge=="I think the driver is wrong": st.info(f"Alternative hypothesis captured: {st.selectbox('Alternative hypothesis',['Price','Competition','Marketing','Customer Churn','Operations','Other'])}")
-    st.markdown("### What Would Change This Conclusion?"); changes=pd.DataFrame({"Evidence increasing confidence":["Consistent Product A volume decline across affected accounts","Verified linkage between fulfilment deterioration and lost orders","Independent CRM + operational evidence with aligned timestamps"],"Evidence decreasing confidence":["New attribution data contradicts the contribution split","Unaffected regions show the same Product A decline","Evidence freshness or completeness materially deteriorates"]}); st.dataframe(changes,use_container_width=True,hide_index=True)
-    st.markdown("### Decision Approval"); ack=st.checkbox("I acknowledge the evidence, uncertainty and stated constraints."); can=ack and comp["compatible"] and challenge=="I agree"; st.button("Approve Action",type="primary",disabled=not can) if not can else None
-    if can and st.button("Confirm Approval",type="primary"): st.session_state.approved_action={"Action":selected,"Owner":a["owner"],"Status":"Approved","Metrics":a["metrics"]}; st.success(f"{selected} approved.")
-    st.markdown("### Monitor Outcome");
+        for issue in compatibility["issues"]:
+            st.error(issue)
+
+    st.markdown("### Challenge Recommendation")
+
+    challenge = st.radio(
+        "How would you assess the recommendation?",
+        [
+            "I agree",
+            "I think the driver is wrong",
+            "Evidence missing",
+            "Action not feasible",
+        ],
+    )
+
+    if challenge == "I think the driver is wrong":
+        alternative = st.selectbox(
+            "Alternative Hypothesis",
+            [
+                "Price",
+                "Competition",
+                "Marketing",
+                "Customer Churn",
+                "Operations",
+                "Other",
+            ],
+        )
+        st.info(f"Alternative hypothesis captured: {alternative}")
+
+    st.markdown("### What Would Change This Conclusion?")
+
+    change_df = pd.DataFrame(
+        {
+            "Evidence increasing confidence": [
+                "Consistent Product A volume decline across affected accounts",
+                "Verified linkage between fulfilment deterioration and lost orders",
+                "Independent CRM and operational evidence with aligned timestamps",
+            ],
+            "Evidence decreasing confidence": [
+                "New attribution data contradicts the contribution split",
+                "Unaffected regions show the same Product A decline",
+                "Evidence freshness or completeness materially deteriorates",
+            ],
+        }
+    )
+
+    st.dataframe(
+        change_df,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.markdown("### Decision Approval")
+
+    acknowledge = st.checkbox(
+        "I acknowledge the evidence, uncertainty and stated constraints."
+    )
+
+    can_approve = (
+        acknowledge
+        and compatibility["compatible"]
+        and challenge == "I agree"
+    )
+
+    if can_approve:
+        if st.button("Approve Action", type="primary"):
+            st.session_state.approved_action = {
+                "Action": selected_action,
+                "Owner": action["owner"],
+                "Status": "Approved",
+                "Metrics": action["metrics"],
+            }
+            st.success(f"{selected_action} approved.")
+    else:
+        st.button("Approve Action", disabled=True)
+
+    st.markdown("### Monitor Outcome")
+
     if st.session_state.approved_action:
-        ap=st.session_state.approved_action; st.write(f"**Approved Action:** {ap['Action']}"); st.write(f"**Owner:** {ap['Owner']}"); st.write(f"**Metrics to Monitor:** {ap['Metrics']}"); st.write("**Review Cadence:** Weekly"); st.info("Status: Pending measurement")
-    else: st.info("No action approved yet.")
+        approved = st.session_state.approved_action
+        st.write(f"**Approved Action:** {approved['Action']}")
+        st.write(f"**Owner:** {approved['Owner']}")
+        st.write(f"**Metrics to Monitor:** {approved['Metrics']}")
+        st.write("**Review Cadence:** Weekly")
+        st.info("Status: Pending measurement")
+    else:
+        st.info("No action approved yet.")
 
-elif page=="Evidence & Lineage":
-    st.subheader("Evidence & Lineage"); st.write("Trace insights back to source, freshness, evidence type and analytical method."); e=pd.DataFrame({"Evidence":["Regional Revenue","CRM Account Risk","Support Tickets","Fulfilment SLA"],"Source":["Sales / ERP","CRM","Customer Support","Operations"],"Freshness":["2 hours ago","4 hours ago","15 minutes ago","30 minutes ago"],"Role":["Quantitative KPI","Customer context","Unstructured signal","Operational signal"]}); st.dataframe(e,use_container_width=True,hide_index=True)
-    st.markdown("### KPI Lineage"); st.code("ERP / Sales\n  ↓\nEnterprise Warehouse\n  ↓\nGoverned KPI Layer\n  ↓\nMateriality Detection\n  ↓\nContribution Analysis\n  ↓\nEvidence Retrieval\n  ↓\nConfidence Assessment\n  ↓\nNarrative / BI.ai Assistant\n  ↓\nDecision Workspace\n  ↓\nApproval + Monitoring",language="text")
-    st.markdown("### Evidence Classification"); classes=pd.DataFrame({"Classification":["Observed Fact","Measured Contribution","Association","Likely Driver","Causal Evidence","Unconfirmed Hypothesis"],"Meaning":["Direct business measurement","Quantified KPI contribution","Variables moved together","Evidence supports an explanation","Stronger causal method available","Plausible but insufficiently supported"]}); st.dataframe(classes,use_container_width=True,hide_index=True)
 
-elif page=="Governance & Telemetry":
-    st.subheader("Governance & Telemetry"); st.write("Inspect role access, data controls, analytical behaviour and live BI.ai runtime telemetry.")
-    st.markdown("### Security & Access"); security=pd.DataFrame({"Role":["CEO","Sales Manager","Analyst"],"Access":["Aggregate business metrics","Regional and authorised customer information","Detailed analytical evidence"],"Sensitive Data":["Restricted","Role dependent","Authorised analytical access"]}); st.dataframe(security,use_container_width=True,hide_index=True)
-    st.markdown("### Data Governance"); gov=pd.DataFrame({"Control":["KPI Definition","Data Freshness","Source Lineage","Access Control","Confidence","Auditability"],"Purpose":["Ensure consistent KPI calculations","Show when source data was last updated","Trace insights back to originating systems","Restrict data based on permissions","Communicate evidence strength","Record analytical decisions and outputs"]}); st.dataframe(gov,use_container_width=True,hide_index=True)
-    st.markdown("### Runtime Telemetry"); t=engine.telemetry.snapshot(); c1,c2,c3,c4=st.columns(4); c1.metric("Analytical Latency",f"{t['latency_ms']} ms"); c2.metric("BI.ai LLM Calls",t["llm_calls"]); c3.metric("Tokens Used",f"{t['tokens_used']:,}"); c4.metric("Estimated LLM Cost",f"${t['est_cost_usd']:.6f}"); c1,c2,c3=st.columns(3); c1.metric("Input Tokens",f"{t['input_tokens']:,}"); c2.metric("Output Tokens",f"{t['output_tokens']:,}"); c3.metric("Last BI.ai Latency",f"{t['last_llm_latency_ms']} ms"); st.caption(f"Last BI.ai status: {t['last_llm_status']} · Model: {get_model()}")
-    st.markdown("### LLM vs Non-LLM Processing"); p=pd.DataFrame({"Processing Step":["KPI Calculation","Materiality Detection","Driver Contribution","Evidence Retrieval","Confidence Assessment","Deterministic Narrative","BI.ai Natural-language Q&A","Action Compatibility"],"Technology":["Deterministic logic","Statistics + business rules","Deterministic analytics","Retrieval","Rules + statistical evidence","Deterministic template","LLM","Deterministic rules"],"Reason":["Numerical accuracy","Separate material movement from normal variation","Quantify measurable contributors","Find qualitative context","Avoid unsupported certainty","Controlled prototype output","Natural-language interaction grounded in current context","Respect budget, ownership and decision rights"]}); st.dataframe(p,use_container_width=True,hide_index=True); st.write("LLM Calls, tokens and estimated cost remain zero until a BI.ai request is attempted. After live use, Governance shows cumulative session totals.")
+# =========================================================
+# EVIDENCE & LINEAGE
+# =========================================================
+elif page == "Evidence & Lineage":
+    st.subheader("Evidence & Lineage")
+    st.write(
+        "Trace insights to their source, freshness, classification and method."
+    )
 
-else:
-    st.subheader("Feedback & Learning"); st.write("Help BusinessIntelligence.ai improve explanation quality, confidence assessment, recommendation usefulness and BI.ai responses.")
-    area=st.selectbox("Select area",["Overview","KPI Intelligence","BI.ai Assistant","Decision Workspace","Evidence & Lineage","Governance & Telemetry","Overall Experience"]); kind=st.selectbox("Feedback type",["This section was useful","This section was confusing","Incorrect driver","Missing evidence","Confidence was too high","Confidence was too low","Recommendation was not practical","Data or metric issue","Security or access issue","Performance or latency issue","BI.ai answer quality issue","Other"]); role=st.selectbox("Your role",["CEO","Sales Manager","Analyst"]); comment=st.text_area("Comment",placeholder="Tell us what was correct, incorrect, missing, confusing, or what should improve.",height=160)
-    if st.button("Submit Feedback",type="primary"):
-        if comment.strip(): st.session_state.feedback_history.append({"Area":area,"Role":role,"Feedback":kind,"Comment":comment.strip()}); st.success(f"Feedback captured for {area}.")
-        else: st.warning("Please enter a comment before submitting.")
-    st.markdown("### Recent Feedback"); st.dataframe(pd.DataFrame(st.session_state.feedback_history),use_container_width=True,hide_index=True) if st.session_state.feedback_history else st.info("No feedback submitted yet."); st.markdown("### How Feedback Improves the Engine"); loop=pd.DataFrame({"Feedback Area":["KPI Intelligence","BI.ai Assistant","Decision Workspace","Evidence & Lineage","Governance & Telemetry"],"Improvement Focus":["Driver ranking and confidence","Grounding, helpfulness and answer quality","Recommendation quality and feasibility","Evidence retrieval and traceability","Security, latency, cost and reliability"]}); st.dataframe(loop,use_container_width=True,hide_index=True)
+    evidence_table = pd.DataFrame(
+        {
+            "Evidence": [
+                "Regional Revenue",
+                "CRM Account Risk",
+                "Support Tickets",
+                "Fulfilment SLA",
+            ],
+            "Source": [
+                "Sales / ERP",
+                "CRM",
+                "Customer Support",
+                "Operations",
+            ],
+            "Freshness": [
+                "2 hours ago",
+                "4 hours ago",
+                "15 minutes ago",
+                "30 minutes ago",
+            ],
+            "Role": [
+                "Quantitative KPI",
+                "Customer context",
+                "Unstructured signal",
+                "Operational signal",
+            ],
+        }
+    )
 
-st.markdown("---"); st.caption("BusinessIntelligence.ai · Round 2 Prototype · Synthetic Data · Evidence before explanation · Quantitative truth stays deterministic")
+    st.dataframe(
+        evidence_table,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.markdown("### KPI Lineage")
+    st.code(
+        """ERP / Sales
+  ↓
+Enterprise Warehouse
+  ↓
+Governed KPI Layer
+  ↓
+Materiality Detection
+  ↓
+Contribution Analysis
+  ↓
+Evidence Retrieval
+  ↓
+Confidence Assessment
+  ↓
+BI.ai Assistant
+  ↓
+Decision Workspace
+  ↓
+Approval + Monitoring""",
+        language="text",
+    )
+
+    st.markdown("### Evidence Classification")
+    classes = pd.DataFrame(
+        {
+            "Classification": [
+                "Observed Fact",
+                "Measured Contribution",
+                "Association",
+                "Likely Driver",
+                "Causal Evidence",
+                "Unconfirmed Hypothesis",
+            ],
+            "Meaning": [
+                "Direct business measurement",
+                "Quantified KPI contribution",
+                "Variables moved together",
+                "Evidence supports an explanation",
+                "Stronger causal method available",
+                "Plausible but insufficiently supported",
+            ],
+        }
+    )
+
+    st.dataframe(
+        classes,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
+# =========================================================
+# GOVERNANCE & TELEMETRY
+# =========================================================
+elif page == "Governance & Telemetry":
+    st.subheader("Governance & Telemetry")
+    st.write(
+        "Inspect security, governance controls and live BI.ai runtime behaviour."
+    )
+
+    st.markdown("### Security & Access")
+    security = pd.DataFrame(
+        {
+            "Role": [
+                "CEO",
+                "Sales Manager",
+                "Analyst",
+            ],
+            "Access": [
+                "Aggregate business metrics",
+                "Regional and authorised customer information",
+                "Detailed analytical evidence",
+            ],
+            "Sensitive Data": [
+                "Restricted",
+                "Role dependent",
+                "Authorised analytical access",
+            ],
+        }
+    )
+    st.dataframe(
+        security,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.markdown("### Data Governance")
+    governance = pd.DataFrame(
+        {
+            "Control": [
+                "KPI Definition",
+                "Data Freshness",
+                "Source Lineage",
+                "Access Control",
+                "Confidence",
+                "Auditability",
+            ],
+            "Purpose": [
+                "Ensure consistent KPI calculations",
+                "Show when source data was last updated",
+                "Trace insights back to originating systems",
+                "Restrict data based on permissions",
+                "Communicate evidence strength",
+                "Record analytical decisions and outputs",
+            ],
+        }
+    )
+    st.dataframe(
+        governance,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.markdown("### Runtime Telemetry")
+    telemetry = engine.telemetry.snapshot()
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Analytical Latency", f"{telemetry['latency_ms']} ms")
+    c2.metric("BI.ai LLM Calls", telemetry["llm_calls"])
+    c3.metric("Tokens Used", f"{telemetry['tokens_used']:,}")
+    c4.metric(
+        "Estimated LLM Cost",
+        f"${telemetry['est_cost_usd']:.6f}",
+    )
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Input Tokens", f"{telemetry['input_tokens']:,}")
+    c2.metric("Output Tokens", f"{telemetry['output_tokens']:,}")
+    c3.metric(
+        "Last BI.ai Latency",
+        f"{telemetry['last_llm_latency_ms']} ms",
+    )
+
+    st.caption(
+        f"Last BI.ai status: {telemetry['last_llm_status']} · "
+        f"Model: {get_model()}"
+    )
+
+    st.markdown("### LLM vs Non-LLM Processing")
+
+    processing = pd.DataFrame(
+        {
+            "Processing Step": [
+                "KPI Calculation",
+                "Materiality Detection",
+                "Driver Contribution",
+                "Evidence Retrieval",
+                "Confidence Assessment",
+                "Deterministic Narrative",
+                "BI.ai Natural-language Q&A",
+                "Action Compatibility",
+            ],
+            "Technology": [
+                "Deterministic logic",
+                "Statistics + business rules",
+                "Deterministic analytics",
+                "Retrieval",
+                "Rules + statistical evidence",
+                "Deterministic template",
+                "LLM",
+                "Deterministic rules",
+            ],
+            "Reason": [
+                "Numerical accuracy",
+                "Separate signal from normal variation",
+                "Quantify contributors",
+                "Find qualitative context",
+                "Avoid unsupported certainty",
+                "Controlled prototype output",
+                "Natural-language interaction",
+                "Respect constraints and decision rights",
+            ],
+        }
+    )
+
+    st.dataframe(
+        processing,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    if has_api_key():
+        st.success(
+            "BI.ai is configured. LLM telemetry will update when questions are asked."
+        )
+    else:
+        st.info(
+            "BI.ai is not configured yet. LLM calls, tokens and cost remain zero "
+            "until an API key is added."
+        )
+
+
+# =========================================================
+# FEEDBACK
+# =========================================================
+elif page == "Feedback/Comments":
+    st.subheader("Feedback & Learning")
+    st.write(
+        "Help improve explanations, evidence quality, confidence, actions and BI.ai answers."
+    )
+
+    feedback_area = st.selectbox(
+        "Select Area",
+        [
+            "Overview",
+            "KPI Intelligence",
+            "BI.ai Assistant",
+            "Decision Workspace",
+            "Evidence & Lineage",
+            "Governance & Telemetry",
+            "Overall Experience",
+        ],
+    )
+
+    feedback_type = st.selectbox(
+        "Feedback Type",
+        [
+            "This section was useful",
+            "This section was confusing",
+            "Incorrect driver",
+            "Missing evidence",
+            "Confidence was too high",
+            "Confidence was too low",
+            "Recommendation was not practical",
+            "Data or metric issue",
+            "Security or access issue",
+            "Performance or latency issue",
+            "BI.ai answer quality issue",
+            "Other",
+        ],
+    )
+
+    feedback_role = st.selectbox(
+        "Your Role",
+        ["CEO", "Sales Manager", "Analyst"],
+    )
+
+    comment = st.text_area(
+        "Comment",
+        placeholder=(
+            "Tell us what was correct, incorrect, missing, confusing, "
+            "or what should improve."
+        ),
+        height=160,
+    )
+
+    if st.button("Submit Feedback", type="primary"):
+        if not comment.strip():
+            st.warning("Please enter a comment.")
+        else:
+            st.session_state.feedback_history.append(
+                {
+                    "Area": feedback_area,
+                    "Role": feedback_role,
+                    "Feedback": feedback_type,
+                    "Comment": comment.strip(),
+                }
+            )
+            st.success("Feedback captured.")
+
+    st.markdown("### Recent Feedback")
+
+    if st.session_state.feedback_history:
+        st.dataframe(
+            pd.DataFrame(st.session_state.feedback_history),
+            use_container_width=True,
+            hide_index=True,
+        )
+    else:
+        st.info("No feedback submitted yet.")
+
+    st.markdown("### Learning Loop")
+
+    learning_loop = pd.DataFrame(
+        {
+            "Feedback": [
+                "Incorrect driver",
+                "Missing evidence",
+                "Confidence issue",
+                "Poor recommendation",
+                "BI.ai answer quality",
+            ],
+            "Improvement Area": [
+                "Driver ranking",
+                "Evidence retrieval",
+                "Confidence calibration",
+                "Action recommendation",
+                "Grounding and answer quality",
+            ],
+        }
+    )
+
+    st.dataframe(
+        learning_loop,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
+st.divider()
+st.caption(
+    "BusinessIntelligence.ai · Round 2 Prototype · Synthetic Data · "
+    "Evidence before explanation · Quantitative truth stays deterministic"
+)
