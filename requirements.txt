@@ -1,5 +1,7 @@
-streamlit
-pandas
-numpy
-pyyaml
-scipy
+
+streamlit>=1.36,<2
+pandas>=2.2,<3
+numpy>=1.26,<3
+scipy>=1.12,<2
+pyyaml>=6,<7
+openai>=1.100,<2
