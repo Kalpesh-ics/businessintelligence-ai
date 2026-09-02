@@ -74,7 +74,6 @@ page = st.sidebar.radio(
     [
         "Overview",
         "KPI Intelligence",
-        "BI.ai Assistant",
         "Decision Workspace",
         "Evidence & Lineage",
         "Governance & Telemetry",
@@ -329,97 +328,6 @@ elif page == "KPI Intelligence":
 
 
 # =========================================================
-# BI.AI ASSISTANT
-# =========================================================
-elif page == "BI.ai Assistant":
-    st.subheader("BI.ai")
-    st.write(
-        f"Ask about the latest KPI movement, drivers, evidence, confidence, "
-        f"actions, constraints and governance. Current role: **{persona}**."
-    )
-
-    if has_api_key():
-        st.success(f"Live BI.ai connected · {get_model()}")
-    else:
-        st.warning(
-            "BI.ai is currently disconnected. Add OPENAI_API_KEY under "
-            "Streamlit Cloud → Settings → Secrets."
-        )
-
-    st.markdown("### Try asking")
-    suggestions = [
-        "Why did US-West revenue decline?",
-        "What is the strongest quantified driver?",
-        "What evidence supports that driver?",
-        "What should we do next?",
-        "Is pricing a good intervention?",
-        "What happens if we do nothing?",
-        "Why is Marketing ROI abstaining?",
-        "Why did the new KPI switch methodology?",
-    ]
-
-    for q in suggestions:
-        st.caption(f"• {q}")
-
-    st.markdown("### Conversation")
-
-    for msg in st.session_state.chat_history:
-        with st.chat_message(msg["role"]):
-            st.write(msg["content"])
-            if msg.get("meta"):
-                st.caption(msg["meta"])
-
-    question = st.chat_input("Ask BI.ai a business question")
-
-    if question:
-        st.session_state.chat_history.append(
-            {
-                "role": "user",
-                "content": question,
-            }
-        )
-
-        with st.chat_message("user"):
-            st.write(question)
-
-        with st.chat_message("assistant"):
-            with st.spinner("Analysing the current business context..."):
-                result = ask_bi(
-                    question,
-                    json.dumps(
-                        context,
-                        indent=2,
-                        default=str,
-                    ),
-                )
-                apply_telemetry(engine, result)
-
-            if result["status"] == "success":
-                answer = result["answer"]
-                meta = (
-                    f"Model: {result['model']} · "
-                    f"Tokens: {result['usage']['total_tokens']:,} · "
-                    f"Latency: {result['latency_ms']} ms"
-                )
-                st.write(answer)
-                st.caption(meta)
-
-                st.session_state.chat_history.append(
-                    {
-                        "role": "assistant",
-                        "content": answer,
-                        "meta": meta,
-                    }
-                )
-            else:
-                st.error(result["error"])
-
-    if st.button("Clear BI.ai Conversation"):
-        st.session_state.chat_history = []
-        st.rerun()
-
-
-# =========================================================
 # DECISION WORKSPACE
 # =========================================================
 elif page == "Decision Workspace":
@@ -620,6 +528,132 @@ elif page == "Decision Workspace":
         st.info("Status: Pending measurement")
     else:
         st.info("No action approved yet.")
+
+    # ---------------------------------------------------------
+    # BI.AI HERO — LAST SECTION
+    # ---------------------------------------------------------
+    st.markdown("---")
+    st.markdown("## BI.ai")
+    st.write(
+        "Got any more questions that your dashboard, evidence or decision "
+        "workspace didn't answer? Ask BI.ai."
+    )
+
+    st.markdown(
+        """
+        <div style="
+            background: linear-gradient(135deg, #111827 0%, #253047 100%);
+            border-radius: 22px;
+            padding: 34px;
+            margin: 18px 0 12px 0;
+            color: white;
+        ">
+            <div style="font-size: 30px; font-weight: 800; margin-bottom: 8px;">
+                Meet BI.ai
+            </div>
+            <div style="
+                font-size: 16px;
+                line-height: 1.6;
+                color: #D1D5DB;
+                max-width: 850px;
+            ">
+                Your business copilot for this decision. Ask why a KPI moved,
+                challenge a driver, inspect evidence, compare actions, or
+                understand what could change the conclusion.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if has_api_key():
+        st.success(f"BI.ai is live · {get_model()}")
+    else:
+        st.warning(
+            "BI.ai is disconnected. Add OPENAI_API_KEY under "
+            "Streamlit Cloud → Settings → Secrets."
+        )
+
+    st.markdown("### Ask BI.ai")
+
+    hero_questions = [
+        "Why did revenue decline?",
+        "What evidence supports this driver?",
+        "Is pricing a good intervention?",
+        "What happens if we do nothing?",
+        "What would change this conclusion?",
+    ]
+
+    for question in hero_questions:
+        if st.button(
+            question,
+            key="hero_bi_" + re.sub(r"[^a-z0-9]+", "_", question.lower()).strip("_"),
+            use_container_width=True,
+        ):
+            st.session_state["hero_bi_question"] = question
+
+    hero_typed_question = st.chat_input(
+        "Got another question? Ask BI.ai...",
+        key="hero_bi_chat",
+    )
+
+    hero_pending = st.session_state.pop(
+        "hero_bi_question",
+        None,
+    )
+
+    hero_question = hero_typed_question or hero_pending
+
+    if hero_question:
+        st.session_state.chat_history.append(
+            {
+                "role": "user",
+                "content": hero_question,
+            }
+        )
+
+        with st.chat_message("user"):
+            st.write(hero_question)
+
+        live_context = engine.build_context(
+            persona=persona,
+            available_budget=int(st.session_state.available_budget),
+            max_discount_pct=float(st.session_state.max_discount_pct),
+            authority=st.session_state.authority,
+            selected_action=st.session_state.selected_action,
+        )
+
+        with st.chat_message("assistant"):
+            with st.spinner("BI.ai is thinking..."):
+                result = ask_bi(
+                    hero_question,
+                    json.dumps(
+                        live_context,
+                        indent=2,
+                        default=str,
+                    ),
+                )
+                apply_telemetry(engine, result)
+
+            if result["status"] == "success":
+                answer = result["answer"]
+                meta = (
+                    f"Model: {result['model']} · "
+                    f"Tokens: {result['usage']['total_tokens']:,} · "
+                    f"Latency: {result['latency_ms']} ms"
+                )
+                st.write(answer)
+                st.caption(meta)
+
+                st.session_state.chat_history.append(
+                    {
+                        "role": "assistant",
+                        "content": answer,
+                        "meta": meta,
+                    }
+                )
+            else:
+                st.error(result["error"])
 
 
 # =========================================================
@@ -874,8 +908,7 @@ elif page == "Feedback/Comments":
         [
             "Overview",
             "KPI Intelligence",
-            "BI.ai Assistant",
-            "Decision Workspace",
+                "Decision Workspace",
             "Evidence & Lineage",
             "Governance & Telemetry",
             "Overall Experience",
